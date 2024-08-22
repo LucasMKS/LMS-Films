@@ -52,7 +52,6 @@ public class MovieService {
                 return searchResponse.getResults();
             } else {
                 // Handle non-200 responses
-                System.err.println("Error: " + response.statusCode() + " " + response.body());
                 reqRes.setMensagem("Detalhes não encontrado");
                 return List.of(reqRes);
             }
@@ -76,10 +75,9 @@ public class MovieService {
 
             if (response.statusCode() == 200) {
                 TmdbDTO movie = objectMapper.readValue(response.body(), TmdbDTO.class);
-                reqRes.setMensagem("Detalhes encontrado com sucesso");
+                movie.setMensagem("Detalhes encontrado com sucesso");
                 return movie;
             } else {
-                System.err.println("Error: " + response.statusCode() + " " + response.body());
                 reqRes.setMensagem("Detalhes não encontrado");
                 return reqRes;
             }
@@ -105,7 +103,6 @@ public class MovieService {
                 MovieSearchResponse searchResponse = objectMapper.readValue(response.body(), MovieSearchResponse.class);
                 return searchResponse.getResults();
             } else {
-                System.err.println("Error: " + response.statusCode() + " " + response.body());
                 reqRes.setMensagem("Detalhes não encontrado");
                 return List.of(reqRes);
             }
@@ -116,10 +113,7 @@ public class MovieService {
         }
     }
 
-    
-    
 
-    // Classe interna para mapear a resposta da API
     private static class MovieSearchResponse {
         private List<TmdbDTO> results;
 

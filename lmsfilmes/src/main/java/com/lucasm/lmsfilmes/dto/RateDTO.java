@@ -15,6 +15,7 @@ public class RateDTO {
     
         private int statusCode;
         private String mensagem;
+        private String error;
         private String title;
         private String rating;
         private String movieId;

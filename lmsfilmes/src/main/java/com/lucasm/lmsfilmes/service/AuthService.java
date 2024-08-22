@@ -30,11 +30,14 @@ public class AuthService {
     ResponseDTO resp = new ResponseDTO();
 
     try {
-
-        // Verifica se o e-mail já está cadastrado
         if (usersRepo.findByEmail(registrationRequest.getEmail()).isPresent()) {
-            resp.setStatusCode(400); // Bad Request
-            resp.setMensagem("E-mail já cadastrado.");
+            resp.setStatusCode(400);
+            resp.setError("E-mail já cadastrado.");
+            return resp;
+        }
+        if (usersRepo.findByNickname(registrationRequest.getNickname()).isPresent()) {
+            resp.setStatusCode(400);
+            resp.setError("Username já cadastrado.");
             return resp;
         }
 
@@ -50,7 +53,7 @@ public class AuthService {
         UserModel ourUsersResult = usersRepo.save(ourUser);
         if (ourUsersResult.getId()>0) {
             resp.setOurUsers((ourUsersResult));
-            resp.setMensagem("Usuario cadastrado com sucesso");
+            resp.setMessage("Usuário cadastrado com sucesso");
             resp.setStatusCode(200);
         }
 
@@ -80,17 +83,17 @@ public class AuthService {
             response.setNickname(user.getNickname());
             response.setRefreshToken(refreshToken);
             response.setExpirationTime("24Hrs");
-            response.setMensagem(user.getName() + " Logado com sucesso");
+            response.setMessage(user.getName() + " Logado com sucesso");
 
         } catch (UsernameNotFoundException e) {
             response.setStatusCode(404); // Not Found
-            response.setMensagem("Usuário não encontrado.");
+            response.setError("Usuário não encontrado.");
         } catch (BadCredentialsException e) {
             response.setStatusCode(401); // Unauthorized
-            response.setMensagem("Credenciais inválidas.");
+            response.setError("Credenciais inválidas.");
         } catch (Exception e) {
             response.setStatusCode(500); // Internal Server Error
-            response.setMensagem("Erro interno do servidor.");
+            response.setError("Erro interno do servidor.");
         }
         return response;
     }

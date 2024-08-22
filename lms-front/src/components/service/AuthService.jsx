@@ -74,6 +74,30 @@ class AuthService {
       throw err;
     }
   }
+
+  static async updateRating(movieId, rating) {
+    try {
+      const token = localStorage.getItem('token');
+      const nickname = localStorage.getItem('nickname');
+  
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+      };
+  
+      const response = await axios.put(`${this.BASE_URL}/rate/update`, {
+        movieId,
+        rating,
+        nickname,
+      }, { headers });
+  
+      return response.data;
+    } catch (err) {
+      if (err.response && err.response.data) {
+        return err.response.data;
+      }
+      throw err;
+    }
+  }
   
 
   static async getRatedContent() {

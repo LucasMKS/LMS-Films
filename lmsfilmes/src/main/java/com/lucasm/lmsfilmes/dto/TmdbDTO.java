@@ -45,7 +45,6 @@ public class TmdbDTO {
     private boolean video;
     private double vote_average;
     private int vote_count;
-    private double myVote;
     private MovieModel movies;
     private List<TmdbDTO> results;
 

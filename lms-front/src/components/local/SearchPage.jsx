@@ -8,23 +8,25 @@ import { Menubar } from 'primereact/menubar';
 import { Avatar } from 'primereact/avatar';
 import { InputText } from 'primereact/inputtext';
 import { InputNumber } from 'primereact/inputnumber';
-import { Messages } from 'primereact/messages';
+import { Toast } from 'primereact/toast';
 import { IconField } from "primereact/iconfield";
 import { InputIcon } from "primereact/inputicon";
+import { BlockUI } from 'primereact/blockui';
 
 import AuthService from '../service/AuthService';
 import bgImagem from '../../assets/LMS.png';
 import posterImagem from '../../assets/LMS_Poster.png';
+import logoutIcon from '../../assets/logout.png';
 
 const SearchPage = ({ onLogout }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [results, setResults] = useState([]);
     const [details, setDetails] = useState([]);
-    const [error, setError] = useState('');
     const [selectedContent, setSelectedContent] = useState(null);
     const [open, setOpen] = useState(false);
     const [valueRate, setValueRate] = useState('');
-    const msgs = useRef(null);
+    const [blocked, setBlocked] = useState(false);
+    const toast = useRef(null);
 
     const navigate = useNavigate();
 
@@ -34,9 +36,26 @@ const SearchPage = ({ onLogout }) => {
     };
 
     useEffect(() => {
+        setBlocked(true);
         popularMovies();
         setSearchTerm("");
     }, []);
+
+    const TimeoutBlocked = () => {
+        if (blocked) {
+            setTimeout(() => {
+                setBlocked(false);
+            }, 1000);
+        }
+    };
+
+    useEffect(() => {
+        if (blocked) {
+            setTimeout(() => {
+                setBlocked(false);
+            }, 1000);
+        }
+    }, [blocked]);
 
     const handleClickOpen = async (content) => {
         setSelectedContent(content);
@@ -45,7 +64,7 @@ const SearchPage = ({ onLogout }) => {
                 const response = await AuthService.details(content.id);
                 setDetails(response);
             } catch (error) {
-                setError("Erro ao buscar detalhes do filme");
+                showError(error.message);
             }
         }
         setOpen(true);
@@ -57,15 +76,14 @@ const SearchPage = ({ onLogout }) => {
             const response = await AuthService.search(searchTerm);
             if (response && response.length > 0) {
                 setResults(response);
-                setError('');
             } else {
                 popularMovies();
-                setError('Nenhum resultado encontrado.');
+                showError(response.mensagem);
             }
             console.log(response);
         } catch (error) {
             setResults([]);
-            setError("Erro ao buscar filme");
+            showError(error.message);
         }
     };
 
@@ -73,12 +91,16 @@ const SearchPage = ({ onLogout }) => {
         setOpen(false)
         event.preventDefault();
         try {
-            await AuthService.sendRating(selectedContent.title, selectedContent.id, valueRate, selectedContent.poster_path);
-            addMessages('success');
+            const response = await AuthService.sendRating(selectedContent.title, selectedContent.id, valueRate, selectedContent.poster_path);
+            if (response.mensagem) {
+                showSuccess(response.mensagem);
+            } 
+            if (response.error) {
+                showError(response.error);
+            }
             setValueRate('');
         } catch (error) {
-            setError("Erro ao enviar avaliação: " + error.message);
-            addMessages('error');
+            showError(error.message);
         }
     };
 
@@ -88,7 +110,7 @@ const SearchPage = ({ onLogout }) => {
             setResults(response);
         } catch (error) {
             setResults([]);
-            setError("Erro ao buscar filmes populares");
+            showError(error.message);
         }
     }
 
@@ -120,27 +142,18 @@ const SearchPage = ({ onLogout }) => {
                     <InputIcon className="pi pi-search"> </InputIcon>
                     <InputText placeholder="Pesquisar" type="text" className="w-8rem sm:w-auto" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                 </IconField>
-
             </form>
-            <Avatar image="https://primefaces.org/cdn/primereact/images/avatar/amyelsner.png" shape="circle" onClick={handleLogout} />
+            <Avatar image={logoutIcon} shape="circle" onClick={handleLogout} />
         </div>
     );
 
-    const addMessages = (text,) => {
-        if (text === "success") {
-            msgs.current.show({ severity: 'success', summary: 'Sucesso', detail: 'Nota: ' + valueRate, sticky: true, closable: false })
-        }
-        if (text === "error") {
-            msgs.current.show({ severity: 'error', summary: 'Error', detail: error, sticky: true, closable: false })
-        }
-        setTimeout(() => {
-            clearMessages();
-        }, 5000);
-    };
+    const showError = (errorMessage) => {
+        toast.current.show({severity:'error', summary: 'Error', detail: errorMessage, life: 3000});
+    }
 
-    const clearMessages = () => {
-        msgs.current.clear();
-    };
+    const showSuccess = (message) => {
+        toast.current.show({severity:'success', summary: 'Success', detail: message, life: 3000});
+    }
 
     return (
         <div className="justify-center items-center text-center" style={{
@@ -149,36 +162,30 @@ const SearchPage = ({ onLogout }) => {
             minHeight: "100vh",
             overflowY: "auto",
         }}>
-
+            <BlockUI blocked={blocked} fullScreen template={<i className="pi pi-lock" style={{ fontSize: '3rem' }}></i>} />
 
             <div className="fixed top-0 left-0 w-full z-50">
                 <Menubar model={items} start={start} end={end} className='h-16' />
             </div>
             <div className='justify-center items-center text-center'>
-                <Messages ref={msgs} className='absolute mt-20 left-1/2 transform -translate-x-1/2' />
+            <Toast ref={toast} />
                 <div className="min-h-screen flex flex-col items-center py-24">
 
                     <div className="flex flex-col items-center py-24">
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 w-5/6">
-                            {results.length > 0 ? (
-                                results.map((item) => (
-                                    <div key={item.id}>
-                                        <Card
-                                            onClick={() => handleClickOpen(item)}
-                                            title={item.title}
-                                            header={header(item)}
-                                            className="h-full flex flex-col justify-between transform transition-transform duration-300 hover:scale-105"
-                                        >
-                                            <p>Ano: {new Date(item.release_date).getFullYear()}</p>
-                                        </Card>
-                                    </div>
-                                ))
-                            ) : (
-                                <p>Sem filmes disponíveis</p>
-                            )}
-                            {error && (
-                                <p className="text-red-500">{error}</p>
-                            )}
+
+                            {results.map((item) => (
+                                <div key={item.id}>
+                                    <Card
+                                        onClick={() => handleClickOpen(item)}
+                                        title={item.title}
+                                        header={header(item)}
+                                        className="h-full flex flex-col justify-between transform transition-transform duration-300 hover:scale-105"
+                                    >
+                                        <p>Ano: {new Date(item.release_date).getFullYear()}</p>
+                                    </Card>
+                                </div>
+                            ))}
                         </div>
                     </div>
 

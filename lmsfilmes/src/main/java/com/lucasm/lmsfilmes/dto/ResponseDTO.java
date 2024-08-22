@@ -15,7 +15,7 @@ public class ResponseDTO {
 
     private int statusCode;
     private String error;
-    private String mensagem;
+    private String message;
     private String token;
     private String refreshToken;
     private String expirationTime;

@@ -10,7 +10,7 @@ import com.lucasm.lmsfilmes.model.UserModel;
 @Repository
 public interface UserRepository extends JpaRepository<UserModel, Long> {
   Optional<UserModel> findByEmail(String email);
-  Optional<UserModel> findById(Integer id);
+  Optional<UserModel> findByNickname(String nickname);
   
   @SuppressWarnings("null")
   List<UserModel> findAll();

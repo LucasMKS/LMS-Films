@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.lucasm.lmsfilmes.dto.RateDTO;
 import com.lucasm.lmsfilmes.service.RateService;
+import org.springframework.web.bind.annotation.PutMapping;
 
 @RestController
 public class RateController {
@@ -27,5 +28,11 @@ public class RateController {
         RateDTO movies = rateService.ratedContent(nickname);
         return ResponseEntity.ok(movies);
     }
-    
+
+    @PutMapping("rate/update")
+    public ResponseEntity<RateDTO> updateRating(@RequestBody RateDTO ratingDTO) {
+        RateDTO updatedRating = rateService.updateRate(ratingDTO);
+        return ResponseEntity.ok(updatedRating);
+    }
+
 }
