@@ -4,7 +4,6 @@ import LoginPage from './components/auth/LoginPage';
 import AuthService from './components/service/AuthService';
 import RatedPage from './components/local/RatedPage';
 import SearchPage from './components/local/SearchPage';
-import BackupPage from './components/local/BackupPage';
 
 
 function MainApp({ isAuthenticated, isAdmin, onLogin, onLogout }) {
@@ -18,7 +17,6 @@ function MainApp({ isAuthenticated, isAdmin, onLogin, onLogout }) {
           <Route exact path="/login" element={<LoginPage onLogin={onLogin} />} />
           <Route path="/search" element={isAuthenticated ? <SearchPage onLogout={onLogout} /> : <Navigate to="/login" />} />
           <Route path="/rated" element={isAuthenticated ? <RatedPage onLogout={onLogout} /> : <Navigate to="/login" />} />
-          <Route path="/test" element={isAuthenticated ? <BackupPage onLogout={onLogout} /> : <Navigate to="/login" />} />
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       </div>

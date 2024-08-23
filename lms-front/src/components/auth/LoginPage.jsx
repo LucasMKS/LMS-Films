@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AuthService from "../service/AuthService";
-import bgImagem from "../../assets/loginBg.png";
+import bgImagem from "../../assets/LMS-BG.png";
 
 import { InputText } from "primereact/inputtext";
 import { Button } from 'primereact/button';
