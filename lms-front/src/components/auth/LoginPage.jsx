@@ -14,7 +14,7 @@ const INITIAL_LOGIN_DATA = { email: "", password: "" };
 const INITIAL_USER_DATA = { name: "", nickname: "", email: "", password: "" };
 const TIMEOUT = 3000;
 const ROUTES = {
-  SEARCH: "/search",
+  SEARCH: "/home",
 };
 const LOCAL_STORAGE_KEYS = {
   TOKEN: "token",

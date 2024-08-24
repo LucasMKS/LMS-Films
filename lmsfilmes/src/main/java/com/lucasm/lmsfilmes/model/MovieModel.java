@@ -1,5 +1,7 @@
 package com.lucasm.lmsfilmes.model;
 
+import java.util.Date;
+
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -22,4 +24,12 @@ public class MovieModel {
     private String nickname;
 
     private String poster_path;
+
+    @Temporal(TemporalType.DATE)
+    private Date created_at;
+
+    @PrePersist
+    protected void onCreate() {
+        this.created_at = new Date();
+    }
 }

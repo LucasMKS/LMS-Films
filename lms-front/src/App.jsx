@@ -5,7 +5,6 @@ import AuthService from './components/service/AuthService';
 import RatedPage from './components/local/RatedPage';
 import SearchPage from './components/local/SearchPage';
 
-
 function MainApp({ isAuthenticated, isAdmin, onLogin, onLogout }) {
   const location = useLocation();
 
@@ -15,8 +14,8 @@ function MainApp({ isAuthenticated, isAdmin, onLogin, onLogout }) {
         <Routes>
           <Route exact path="/" element={<LoginPage onLogin={onLogin} />} />
           <Route exact path="/login" element={<LoginPage onLogin={onLogin} />} />
-          <Route path="/search" element={isAuthenticated ? <SearchPage onLogout={onLogout} /> : <Navigate to="/login" />} />
-          <Route path="/rated" element={isAuthenticated ? <RatedPage onLogout={onLogout} /> : <Navigate to="/login" />} />
+          <Route path="/home" element={isAuthenticated ? <SearchPage onLogout={onLogout} /> : <Navigate to="/login" />} />
+          <Route path="/avaliados" element={isAuthenticated ? <RatedPage onLogout={onLogout} /> : <Navigate to="/login" />} />
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       </div>
@@ -46,12 +45,12 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <MainApp
-        isAuthenticated={isAuthenticated}
-        isAdmin={isAdmin}
-        onLogin={handleLogin}
-        onLogout={handleLogout}
-      />
+        <MainApp
+          isAuthenticated={isAuthenticated}
+          isAdmin={isAdmin}
+          onLogin={handleLogin}
+          onLogout={handleLogout}
+        />
     </BrowserRouter>
   );
 }

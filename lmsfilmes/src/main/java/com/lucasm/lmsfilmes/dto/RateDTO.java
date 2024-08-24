@@ -1,7 +1,7 @@
 package com.lucasm.lmsfilmes.dto;
 
 import java.util.List;
-
+import java.util.Date;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.lucasm.lmsfilmes.model.MovieModel;
@@ -21,6 +21,7 @@ public class RateDTO {
         private String movieId;
         private String nickname;
         private String poster_path;
+        private Date created_at;
         private MovieModel movieModel;
         private List<MovieModel> movieList;
 

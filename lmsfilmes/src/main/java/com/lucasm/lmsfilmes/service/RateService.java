@@ -15,9 +15,7 @@ public class RateService {
 
     @Autowired
     private MovieRepository movieRepository;
-
-    private RateDTO reqDTO = new RateDTO();
-
+    
     public RateDTO ratingMovies(RateDTO ratingDTO) {
         try {
             if (movieRepository.findByMovieIdAndNickname(ratingDTO.getMovieId(), ratingDTO.getNickname()).isPresent()) {
@@ -46,6 +44,7 @@ public class RateService {
     }
 
     public RateDTO ratedContent(String nickname) {
+        RateDTO reqDTO = new RateDTO();
         try {
             List<MovieModel> result = movieRepository.findAllByNickname(nickname);
             if (!result.isEmpty()) {
@@ -56,14 +55,13 @@ public class RateService {
                 reqDTO.setStatusCode(404);
                 reqDTO.setError("Nenhum filme avaliado encontrado para o nickname: " + nickname);
             }
-            return reqDTO;
         } catch (Exception e) {
             reqDTO.setStatusCode(500);
             reqDTO.setError("Erro ao buscar filmes avaliados: " + e.getMessage());
-            return reqDTO;
         }
+        return reqDTO;
     }
-
+    
     public RateDTO updateRate(RateDTO ratingDTO) {
         try {
             Optional<MovieModel> movieOptional = movieRepository.findByMovieIdAndNickname(ratingDTO.getMovieId(), ratingDTO.getNickname());
@@ -76,7 +74,6 @@ public class RateService {
             } else {
                 ratingDTO.setStatusCode(404);
                 ratingDTO.setError("Filme não encontrado para atualização.");
-                return ratingDTO;
             }
         } catch (Exception e) {
             ratingDTO.setStatusCode(500);
