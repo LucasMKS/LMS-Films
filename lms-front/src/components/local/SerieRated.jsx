@@ -17,13 +17,11 @@ import { Divider } from 'primereact/divider';
 
 import { Heart } from 'lucide-react';
 import { HeartOff } from 'lucide-react';
-import { Star } from 'lucide-react';
-import { House } from 'lucide-react';
 import posterImagem from '../../assets/LMS_Poster.png';
 import bgImagem from '../../assets/LMS-BG.png';
 import logo from '../../assets/logo.png';
 
-const RatedPage = ({ onLogout }) => {
+const SerieRated = ({ onLogout }) => {
     const [content, setContent] = useState([]);
     const [open, setOpen] = useState(false);
     const [selectedContent, setSelectedContent] = useState(null);
@@ -63,9 +61,9 @@ const RatedPage = ({ onLogout }) => {
 
     const ratedContent = async () => {
         try {
-            const response = await AuthService.getRatedContent();
-            setContent(response.movieList || []);
-            setTotalRecords(response.movieList?.length || 0);
+            const response = await AuthService.getRatedSerieContent();
+            setContent(response.serieList || []);
+            setTotalRecords(response.serieList?.length || 0);
 
             if (response.error) showToast('error', 'Error', response.error);
         } catch (error) {
@@ -74,10 +72,10 @@ const RatedPage = ({ onLogout }) => {
         }
     }
 
-    const getAllFavorites = async (item) => {
+    const getAllFavorites = async () => {
         try {
-            const response = await AuthService.getAllFavorites();
-            setFavoritesList(response.favoriteList || []);
+            const response = await AuthService.getAllSeriesFavorites();
+            setFavoritesList(response.favoriteSerieList || []);
             if (response.error) showToast('error', 'Error', response.error);
         } catch (error) {
             setFavoritesList([]);
@@ -85,40 +83,46 @@ const RatedPage = ({ onLogout }) => {
         }
     }
 
-    const handleFavoriteToggle = async (movieId, title) => {
+    const handleFavoriteToggle = async (serieId, name) => {
         try {
-            // Atualiza o estado local
-            const currentFavoriteStatus = favorites[movieId] || false;
-            const newFavoriteStatus = !currentFavoriteStatus;
-
-            setFavorites(prev => ({
-                ...prev,
-                [movieId]: newFavoriteStatus
-            }));
-
             // Envia a solicitação para o backend
-            await AuthService.toggleFavorite(movieId, title, newFavoriteStatus);
+            const newFavoriteStatus = !favorites[serieId];
+            await AuthService.toggleSerieFavorite(serieId, name, newFavoriteStatus);
 
-            // Atualiza a lista de favoritos na Sidebar
-            await getAllFavorites();
-        } catch (error) {
-            // Em caso de erro, reverte o estado
+            // Atualiza o estado local somente após a resposta bem-sucedida da API
             setFavorites(prev => ({
                 ...prev,
-                [movieId]: !(favorites[movieId] || false)
+                [serieId]: newFavoriteStatus
             }));
+
+        } catch (error) {
             showError(error.message);
         }
     };
 
-    const fetchFavoriteStatus = async (movieId) => {
+    const handleFavoriteDetails = async (content) => {
+        setSearchTerm(content.name);
         try {
-            const response = await AuthService.getFavoriteStatus(movieId);
-            console.log(response)
-            setFavorites(prev => ({
-                ...prev,
-                [movieId]: response.favorite
-            }));
+            const response = await AuthService.searchSeries(content.name);
+            setResults(response && response.length > 0 ? response : []);
+            if (!response || response.length === 0) {
+                showError("Nenhum resultado encontrado");
+            }
+        } catch (error) {
+            setResults([]);
+            showError(error.message);
+        }
+    };
+
+    const fetchFavoriteStatus = async (serieId) => {
+        try {
+            const response = await AuthService.getFavoriteSeriesStatus(serieId);
+            if (response.statusCode === 0) {
+                setFavorites(prev => ({
+                    ...prev,
+                    [serieId]: response.favorite
+                }));
+            }
         } catch (error) {
             console.error('Failed to fetch favorite status:', error);
         }
@@ -126,13 +130,13 @@ const RatedPage = ({ onLogout }) => {
 
     const search = (event) => {
         const query = event.query.trim().toLowerCase();
-        setFilteredContent(query ? content.filter(cont => cont.title && cont.title.toLowerCase().startsWith(query)) : [...content]);
+        setFilteredContent(query ? content.filter(cont => cont.name && cont.name.toLowerCase().startsWith(query)) : [...content]);
     }
 
     const autocomplete = (e) => {
         const selected = e.value;
         setSearchValue(selected);
-        if (selected && typeof selected === 'object' && selected.title) {
+        if (selected && typeof selected === 'object' && selected.name) {
             setContent([selected]);
         } else {
             if (!selected) ratedContent();
@@ -143,31 +147,30 @@ const RatedPage = ({ onLogout }) => {
         setSelectedContent(content);
         if (content) {
             try {
-                const response = await AuthService.details(content.movieId);
+                const response = await AuthService.detailSeries(content.serieId);
                 setDetails(response);
 
                 // Buscar o status de favorito
-                fetchFavoriteStatus(content.movieId);
-                if (response.error) showToast('error', 'Error', response.error);
+                fetchFavoriteStatus(content.id);
             } catch (error) {
-                showToast('error', 'Error', error.message);
+                showError(error.message);
             }
         }
         setOpen(true);
     };
 
-    const handleOpenSidebar = async (item) => {
-        getAllFavorites(item)
+    const handleOpenSidebar = async () => {
+        getAllFavorites()
         setVisibleLeft(true);
 
     };
 
     const updateRate = async () => {
         try {
-            const response = await AuthService.updateRating(selectedContent.movieId, valueRate);
+            const response = await AuthService.updateSerieRating(selectedContent.serieId, valueRate);
             setContent(prevContent =>
                 prevContent.map(item =>
-                    item.movieId === selectedContent.movieId
+                    item.serieId === selectedContent.serieId
                         ? { ...item, myVote: valueRate }
                         : item
                 )
@@ -187,14 +190,14 @@ const RatedPage = ({ onLogout }) => {
 
     const menuItems = [
         {
-            label: 'Filmes', 
-            icon: 'pi pi-video', 
+            label: 'Filmes',
+            icon: 'pi pi-video',
             items: [
                 {
-                    label: 'Pesquisar', url: '/filmes'
+                    label: 'Pesquisar', url: '/filmes', icon: 'pi pi-search'
                 },
                 {
-                    label: 'Avaliados', url: '/filmes/avaliados'
+                    label: 'Avaliados', url: '/filmes/avaliados', icon: 'pi pi-star-fill'
                 }
             ]
         },
@@ -203,11 +206,11 @@ const RatedPage = ({ onLogout }) => {
             icon: 'pi pi-play-circle',
             items: [
                 {
-                    label: 'Pesquisar', url: '/series'
+                    label: 'Pesquisar', url: '/series', icon: 'pi pi-search'
                 },
                 {
-                    label: 'Avaliados', url: '/series/avaliados'
-                }                
+                    label: 'Avaliados', url: '/series/avaliados', icon: 'pi pi-star-fill'
+                }
             ]
         },
     ];
@@ -218,7 +221,7 @@ const RatedPage = ({ onLogout }) => {
 
             <AutoComplete
                 placeholder='Buscar'
-                field="title"
+                field="name"
                 value={searchValue}
                 suggestions={filteredContent}
                 completeMethod={search}
@@ -231,23 +234,44 @@ const RatedPage = ({ onLogout }) => {
 
     // Função para agrupar conteúdo
     const getGroupedContent = () => {
-        const sortedContent = (() => {
-            switch (groupBy) {
-                case 'name':
-                    return [...content].sort((a, b) => a.title.localeCompare(b.title));
-                case 'rating':
-                    return [...content].sort((a, b) => b.myVote - a.myVote);
-                case 'date':
-                    return [...content].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-                default:
-                    return content;
+        const groupedContent = content.reduce((groups, item) => {
+            const groupKey = (() => {
+                switch (groupBy) {
+                    case 'name':
+                        return item.name.charAt(0).toUpperCase();
+                    case 'rating':
+                        return `Nota: ${item.myVote}`;
+                    case 'date':
+                        return new Date(item.created_at).getFullYear();
+                    default:
+                        return 'Outros';
+                }
+            })();
+
+            if (!groups[groupKey]) {
+                groups[groupKey] = [];
             }
-        })();
+            groups[groupKey].push(item);
+            return groups;
+        }, {});
+
+        const sortedGroupKeys = Object.keys(groupedContent).sort((a, b) => {
+            if (groupBy === 'rating') {
+                const ratingA = parseInt(a.replace('Nota: ', ''), 10);
+                const ratingB = parseInt(b.replace('Nota: ', ''), 10);
+            }
+            return a.localeCompare(b);
+        });
+
+        let result = [];
+        sortedGroupKeys.forEach((key) => {
+            result = result.concat(groupedContent[key]);
+        });
 
         // Paginação
         const start = currentPage * itemsPerPage;
         const end = start + itemsPerPage;
-        return sortedContent.slice(start, end);
+        return result.slice(start, end);
     };
 
     const customHeader = (
@@ -273,7 +297,7 @@ const RatedPage = ({ onLogout }) => {
                 {favoritesList && favoritesList.length > 0 && (
                     favoritesList.map((item) => (
                         <>
-                            <Button label={item.title} severity="secondary" text className="w-full mt-2" onClick={() => handleClickOpen(item)} />
+                            <Button label={item.name} severity="secondary" text className="w-full mt-2" onClick={() => handleClickOpen(item)} />
                             <Divider />
                         </>
                     ))
@@ -303,9 +327,9 @@ const RatedPage = ({ onLogout }) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 w-5/6">
                     {getGroupedContent().map((item) => (
                         <Card
-                            key={item.id}
+                            key={item.serieId}
                             onClick={() => handleClickOpen(item)}
-                            title={item.title}
+                            title={item.name}
                             header={() => (
                                 <Image
                                     src={item.poster_path ? `https://image.tmdb.org/t/p/w200/${item.poster_path}` : posterImagem}
@@ -341,27 +365,28 @@ const RatedPage = ({ onLogout }) => {
 
                 {selectedContent && (
                     <Dialog
-                        header={selectedContent.title}
+                        header={selectedContent.name}
                         visible={open}
                         style={{ width: '38vw' }}
                         onHide={() => setOpen(false)}
                     >
                         <div>
                             <p className="italic">{details.tagline}</p>
-                            {details.production_companies && details.production_companies.length > 0 && (
+                            <p>{details.status}</p>
+                            {details.networks && details.networks.length > 0 && (
                                 <div className="mt-2">
                                     <p className="font-bold">
-                                        {details.production_companies[0].name}
-                                        {details.production_companies[0].origin_country && (
-                                            <span> ({details.production_companies[0].origin_country})</span>
+                                        {details.networks[0].name}
+                                        {details.networks[0].origin_country && (
+                                            <span> ({details.networks[0].origin_country})</span>
                                         )}
                                     </p>
                                 </div>
                             )}
                             <div className="absolute top-2 right-2">
                                 <ToggleButton
-                                    checked={favorites[selectedContent.movieId] || false}
-                                    onChange={() => handleFavoriteToggle(selectedContent.movieId, selectedContent.title)}
+                                    checked={favorites[selectedContent.serieId] || false}
+                                    onChange={() => handleFavoriteToggle(selectedContent.serieId, selectedContent.name)}
                                     className="w-4rem"
                                     onLabel="Desfavoritar"
                                     offLabel="Favoritar"
@@ -379,7 +404,7 @@ const RatedPage = ({ onLogout }) => {
 
                                 <div>
                                     <p className="font-bold justify-center flex">
-                                        {new Date(details.release_date).toLocaleDateString('pt-BR', {
+                                        {new Date(details.first_air_date).toLocaleDateString('pt-BR', {
                                             day: '2-digit',
                                             month: '2-digit',
                                             year: 'numeric'
@@ -387,8 +412,9 @@ const RatedPage = ({ onLogout }) => {
                                     </p>
                                     <div>
                                         <p className="font-bold justify-center flex">
-                                            {Math.floor(details.runtime / 60)}h {details.runtime % 60}min
+                                            S{details.number_of_seasons} E{details.number_of_episodes}
                                         </p>
+
                                     </div>
                                     {details.genres && details.genres.length > 0 && (
                                         <div className="mt-2 flex space-x-2 justify-center">
@@ -407,8 +433,6 @@ const RatedPage = ({ onLogout }) => {
                                     <div className='justify-center flex'>
                                         <Button className='w-36 h-8 mr-1' type="button" label="HomePage" icon="pi pi-users" outlined badgeClassName="p-badge-danger" onClick={() => window.open(details.homepage)}
                                             disabled={!details.homepage} />
-                                        <Button className='w-36 h-8 ml-1' type="button" label="Imdb" icon="pi pi-users" outlined badgeClassName="p-badge-danger" onClick={() => window.open('https://www.imdb.com/title/' + details.imdb_id)}
-                                            disabled={!details.imdb_id} />
                                     </div>
                                 </div>
                             </div>
@@ -434,4 +458,4 @@ const RatedPage = ({ onLogout }) => {
     );
 }
 
-export default RatedPage;
+export default SerieRated;

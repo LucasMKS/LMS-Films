@@ -49,6 +49,33 @@ class AuthService {
     }
   }
 
+  static async searchSeries(searchTerm) {
+    try {
+      const encodedSearchTerm = encodeURIComponent(searchTerm);
+      const response = await axios.get(`${AuthService.BASE_URL}/series/search?query=${encodedSearchTerm}`)
+      return response.data;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  static async detailSeries(serieId) {
+    try {
+      const response = await axios.get(`${AuthService.BASE_URL}/series/details/${serieId}`);
+      return response.data;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  static async popularSeries(page) {
+    try {
+      const response = await axios.get(`${AuthService.BASE_URL}/series/popular?page=${page}`);
+      return response.data;
+    } catch (err) {
+      throw err;
+    }
+  }
 
   static async sendRating(title, movieId, rating, poster_path) {
     try {
@@ -59,7 +86,7 @@ class AuthService {
         'Authorization': `Bearer ${token}`,
       };
 
-      const response = await axios.post(`${this.BASE_URL}/rate/save`, {
+      const response = await axios.post(`${this.BASE_URL}/rate/m/save`, {
         title,
         movieId,
         rating,
@@ -85,7 +112,7 @@ class AuthService {
         'Authorization': `Bearer ${token}`,
       };
 
-      const response = await axios.put(`${this.BASE_URL}/rate/update`, {
+      const response = await axios.put(`${this.BASE_URL}/rate/m/update`, {
         movieId,
         rating,
         nickname,
@@ -96,6 +123,94 @@ class AuthService {
       if (err.response && err.response.data) {
         return err.response.data;
       }
+      throw err;
+    }
+  }
+
+  static async getRatedContent() {
+    try {
+      const nickname = localStorage.getItem('nickname');
+      const token = localStorage.getItem('token');
+
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+      };
+
+      const response = await axios.get(`${AuthService.BASE_URL}/rate/m/ratedcontent`, {
+        headers,
+        params: { nickname },
+      });
+      return response.data;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  static async sendSerieRate(name, serieId, rating, poster_path) {
+    try {
+      const token = localStorage.getItem('token');
+      const nickname = localStorage.getItem('nickname');
+
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+      };
+
+      const response = await axios.post(`${this.BASE_URL}/rate/s/save`, {
+        name,
+        serieId,
+        rating,
+        nickname,
+        poster_path,
+      }, { headers });
+
+      return response.data;
+    } catch (err) {
+      if (err.response && err.response.data) {
+        return err.response.data;
+      }
+      throw err;
+    }
+  }
+
+  static async updateSerieRating(serieId, rating) {
+    try {
+      const token = localStorage.getItem('token');
+      const nickname = localStorage.getItem('nickname');
+
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+      };
+
+      const response = await axios.put(`${this.BASE_URL}/rate/s/update`, {
+        serieId,
+        rating,
+        nickname,
+      }, { headers });
+
+      return response.data;
+    } catch (err) {
+      if (err.response && err.response.data) {
+        return err.response.data;
+      }
+      throw err;
+    }
+  }
+
+  static async getRatedSerieContent() {
+    try {
+      const nickname = localStorage.getItem('nickname');
+      const token = localStorage.getItem('token');
+
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+      };
+
+      const response = await axios.get(`${AuthService.BASE_URL}/rate/s/ratedcontent`, {
+        headers,
+        params: { nickname },
+      });
+      return response.data;
+    } catch (err) {
       throw err;
     }
   }
@@ -146,26 +261,6 @@ class AuthService {
       throw err;
     }
   }
-  
-
-  static async getRatedContent() {
-    try {
-      const nickname = localStorage.getItem('nickname');
-      const token = localStorage.getItem('token');
-
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-      };
-
-      const response = await axios.get(`${AuthService.BASE_URL}/rate/ratedcontent`, {
-        headers,
-        params: { nickname },
-      });
-      return response.data;
-    } catch (err) {
-      throw err;
-    }
-  }
 
   static async getAllFavorites() {
     try {
@@ -177,6 +272,72 @@ class AuthService {
       };
 
       const response = await axios.get(`${AuthService.BASE_URL}/movies/getfavorites`, {
+        headers,
+        params: { nickname },
+      });
+      return response.data;
+    } catch (err) {
+      throw err;
+    }
+  }
+
+  static async toggleSerieFavorite(serieId, name, favorite) {
+    try{
+      const token = localStorage.getItem('token');
+      const nickname = localStorage.getItem('nickname');
+
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+      };
+      const response = await axios.post(`${this.BASE_URL}/series/favorite`, {
+        serieId,
+        name,
+        nickname,
+        favorite,
+        }, {headers });
+      
+        return response.data;
+      } catch (err) {
+        if (err.response && err.response.data) {
+          return err.response.data;
+        }
+        throw err;
+      }
+  };
+
+  static async getFavoriteSeriesStatus(serieId) {
+    try {
+      const token = localStorage.getItem('token');
+      const nickname = localStorage.getItem('nickname');
+  
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+      };
+  
+      const response = await axios.get(`${this.BASE_URL}/series/favoritestatus`, {
+        headers,
+        params: { serieId, nickname },  // Passa os parâmetros aqui
+      });
+  
+      return response.data;
+    } catch (err) {
+      if (err.response && err.response.data) {
+        return err.response.data;
+      }
+      throw err;
+    }
+  }
+
+  static async getAllSeriesFavorites() {
+    try {
+      const nickname = localStorage.getItem('nickname');
+      const token = localStorage.getItem('token');
+
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+      };
+
+      const response = await axios.get(`${AuthService.BASE_URL}/series/getfavorites`, {
         headers,
         params: { nickname },
       });

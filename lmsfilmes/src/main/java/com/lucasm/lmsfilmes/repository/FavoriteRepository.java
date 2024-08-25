@@ -12,4 +12,6 @@ import java.util.Optional;
 public interface FavoriteRepository extends JpaRepository<FavoriteModel, Long> {
     List<FavoriteModel> findAllByNickname(String nickname);
     Optional<FavoriteModel> findByMovieIdAndNickname(String movieId, String nickname);
+    Optional<FavoriteModel> findByNicknameAndMovieId(String nickname, String movieId);
+    List<FavoriteModel> findByNicknameAndFavorite(String nickname, boolean favorite);
 }

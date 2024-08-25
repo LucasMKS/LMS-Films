@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import AuthService from '../service/AuthService';
+import { useNavigate } from 'react-router-dom';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { Card } from 'primereact/card';
@@ -24,7 +25,7 @@ import posterImagem from '../../assets/LMS_Poster.png';
 import bgImagem from '../../assets/LMS-BG.png';
 import logo from '../../assets/logo.png';
 
-const SearchPage = ({ onLogout }) => {
+const SerieSearch = ({ onLogout }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [results, setResults] = useState([]);
     const [details, setDetails] = useState({});
@@ -38,10 +39,11 @@ const SearchPage = ({ onLogout }) => {
     const [favoritesList, setFavoritesList] = useState({})
     const [visibleLeft, setVisibleLeft] = useState(false);
     const toast = useRef(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         setBlocked(true);
-        loadPopularMovies(1);
+        loadPopularSeries(1);
         setSearchTerm("");
     }, []);
 
@@ -51,13 +53,17 @@ const SearchPage = ({ onLogout }) => {
         }
     }, [blocked]);
 
+    const handleLogout = () => {
+        onLogout();
+        navigate('/login');
+    };
+
     const handleClickOpen = async (content) => {
         setSelectedContent(content);
         if (content) {
             try {
-                const response = await AuthService.details(content.id);
+                const response = await AuthService.detailSeries(content.id);
                 setDetails(response);
-                console.log(response);
 
                 // Buscar o status de favorito
                 fetchFavoriteStatus(content.id);
@@ -68,28 +74,14 @@ const SearchPage = ({ onLogout }) => {
         setOpen(true);
     };
 
-    const handleFavoriteDetails = async (content) => {
-        setSearchTerm(content.title); // Define o termo de pesquisa para o título selecionado
-        try {
-            const response = await AuthService.search(content.title); // Realiza a pesquisa pelo título
-            setResults(response && response.length > 0 ? response : []); // Atualiza os resultados para mostrar apenas o item correspondente
-            if (!response || response.length === 0) {
-                showError("Nenhum resultado encontrado"); // Exibe erro se não houver resultados
-            }
-        } catch (error) {
-            setResults([]); // Limpa os resultados em caso de erro
-            showError(error.message); // Exibe a mensagem de erro
-        }
-    };
-    
 
     const handleSearch = async (e) => {
         e.preventDefault();
         try {
-            const response = await AuthService.search(searchTerm);
+            const response = await AuthService.searchSeries(searchTerm);
             setResults(response && response.length > 0 ? response : []);
             if (!response || response.length === 0) {
-                loadPopularMovies(1);
+                loadPopularSeries(1);
             }
         } catch (error) {
             setResults([]);
@@ -101,7 +93,7 @@ const SearchPage = ({ onLogout }) => {
         event.preventDefault();
         setOpen(false);
         try {
-            const response = await AuthService.sendRating(selectedContent.title, selectedContent.id, valueRate, selectedContent.poster_path);
+            const response = await AuthService.sendSerieRate(selectedContent.name, selectedContent.id, valueRate, selectedContent.poster_path);
             response.mensagem ? showSuccess(response.mensagem) : showError(response.error);
             setValueRate(1);
         } catch (error) {
@@ -109,10 +101,11 @@ const SearchPage = ({ onLogout }) => {
         }
     };
 
-    const loadPopularMovies = async (page) => {
+    const loadPopularSeries = async (page) => {
         try {
-            const response = await AuthService.popular(page);
+            const response = await AuthService.popularSeries(page);
             setResults(response);
+            
             setTotalRecords(500);
         } catch (error) {
             setResults([]);
@@ -120,49 +113,47 @@ const SearchPage = ({ onLogout }) => {
         }
     }
 
-    const handleFavoriteToggle = async (movieId, title) => {
+    const handleFavoriteToggle = async (serieId, name) => {
         try {
-            // Atualiza o estado local
-            const currentFavoriteStatus = favorites[movieId] || false;
-            const newFavoriteStatus = !currentFavoriteStatus;
-
-            setFavorites(prev => ({
-                ...prev,
-                [movieId]: newFavoriteStatus
-            }));
-
             // Envia a solicitação para o backend
-            await AuthService.toggleFavorite(movieId, title, newFavoriteStatus);
-
-        } catch (error) {
-            // Em caso de erro, reverte o estado
+            const newFavoriteStatus = !favorites[serieId];
+            await AuthService.toggleSerieFavorite(serieId, name, newFavoriteStatus);
+            
+            // Atualiza o estado local somente após a resposta bem-sucedida da API
             setFavorites(prev => ({
                 ...prev,
-                [movieId]: !(favorites[movieId] || false)
+                [serieId]: newFavoriteStatus
             }));
+            
+        } catch (error) {
+            // Em caso de erro, reverte o estado e mostra a mensagem de erro
             showError(error.message);
         }
     };
+    
 
 
-    const fetchFavoriteStatus = async (movieId) => {
-        try {
-            const response = await AuthService.getFavoriteStatus(movieId);
-            console.log(response)
+const fetchFavoriteStatus = async (serieId) => {
+    try {
+        const response = await AuthService.getFavoriteSeriesStatus(serieId);
+
+        if (response.statusCode === 0) {
             setFavorites(prev => ({
                 ...prev,
-                [movieId]: response.favorite
+                [serieId]: response.favorite
             }));
-        } catch (error) {
-            console.error('Failed to fetch favorite status:', error);
         }
-    };
+    } catch (error) {
+        console.error('Failed to fetch favorite status:', error);
+    }
+};
+
 
 
     const onPageChange = (event) => {
         setFirst(event.first);
         const pageNumber = Math.ceil(event.first / 20) + 1;
-        loadPopularMovies(pageNumber);
+        loadPopularSeries(pageNumber);
     }
 
     const showToast = (severity, summary, detail) => {
@@ -199,10 +190,24 @@ const SearchPage = ({ onLogout }) => {
         },
     ];
 
+    const handleFavoriteDetails = async (content) => {
+        setSearchTerm(content.title); // Define o termo de pesquisa para o título selecionado
+        try {
+            const response = await AuthService.searchSeries(content.name); // Realiza a pesquisa pelo título
+            setResults(response && response.length > 0 ? response : []); // Atualiza os resultados para mostrar apenas o item correspondente
+            if (!response || response.length === 0) {
+                showError("Nenhum resultado encontrado"); // Exibe erro se não houver resultados
+            }
+        } catch (error) {
+            setResults([]); // Limpa os resultados em caso de erro
+            showError(error.message); // Exibe a mensagem de erro
+        }
+    };
+
     const getAllFavorites = async () => {
         try {
-            const response = await AuthService.getAllFavorites();
-            setFavoritesList(response.favoriteList || []);
+            const response = await AuthService.getAllSeriesFavorites();
+            setFavoritesList(response.favoriteSerieList || []);
             if (response.error) showToast('error', 'Error', response.error);
         } catch (error) {
             setFavoritesList([]);
@@ -250,7 +255,7 @@ const SearchPage = ({ onLogout }) => {
                 {favoritesList && favoritesList.length > 0 && (
                     favoritesList.map((item) => (
                         <>
-                            <Button label={item.title} severity="secondary" text className="w-full mt-2" onClick={() => handleFavoriteDetails(item)} />
+                            <Button label={item.name} severity="secondary" text className="w-full mt-2" onClick={() => handleFavoriteDetails(item)} />
                             <Divider />
                         </>
                     ))
@@ -265,9 +270,9 @@ const SearchPage = ({ onLogout }) => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 w-5/6">
                         {results.map((item) => (
                             <Card
-                                key={item.movieId}
+                                key={item.id}
                                 onClick={() => handleClickOpen(item)}
-                                title={item.title}
+                                title={item.name}
                                 header={() => (
                                     <div className="relative">
                                         <Image
@@ -281,7 +286,7 @@ const SearchPage = ({ onLogout }) => {
                                 )}
                                 className="h-full flex flex-col justify-between transform transition-transform duration-300 hover:scale-105"
                             >
-                                <p>Ano: {new Date(item.release_date).getFullYear()}</p>
+                                <p>Ano: {item.first_air_date ? new Date(item.first_air_date).getFullYear() : "Em produção"}</p>
                             </Card>
                         ))}
                     </div>
@@ -296,19 +301,19 @@ const SearchPage = ({ onLogout }) => {
                 </div>
                 {selectedContent && (
                     <Dialog
-                        header={selectedContent.title}
+                        header={selectedContent.name}
                         visible={open}
-                        style={{ width: '40vw' }}
+                        style={{ width: '35vw' }}
                         onHide={() => setOpen(false)}
                     >
                         <div>
-                            <p className="italic">{details.tagline}</p>
-                            {details.production_companies && details.production_companies.length > 0 && (
+                            <p className="italic">{details.status}</p>
+                            {details.networks && details.networks.length > 0 && (
                                 <div className="mt-2">
                                     <p className="font-bold">
-                                        {details.production_companies[0].name}
-                                        {details.production_companies[0].origin_country && (
-                                            <span> ({details.production_companies[0].origin_country})</span>
+                                        {details.networks[0].name}
+                                        {details.networks[0].origin_country && (
+                                            <span> ({details.networks[0].origin_country})</span>
                                         )}
                                     </p>
                                 </div>
@@ -316,7 +321,7 @@ const SearchPage = ({ onLogout }) => {
                             <div className="absolute top-2 right-2">
                                 <ToggleButton
                                     checked={favorites[selectedContent.id] || false}
-                                    onChange={() => handleFavoriteToggle(selectedContent.id, selectedContent.title)}
+                                    onChange={() => handleFavoriteToggle(selectedContent.id, selectedContent.name)}
                                     className="w-4rem"
                                     onLabel="Desfavoritar"
                                     offLabel="Favoritar"
@@ -334,7 +339,7 @@ const SearchPage = ({ onLogout }) => {
 
                                 <div>
                                     <p className="font-bold justify-center flex">
-                                        {new Date(details.release_date).toLocaleDateString('pt-BR', {
+                                        {new Date(details.first_air_date).toLocaleDateString('pt-BR', {
                                             day: '2-digit',
                                             month: '2-digit',
                                             year: 'numeric'
@@ -342,7 +347,7 @@ const SearchPage = ({ onLogout }) => {
                                     </p>
                                     <div>
                                         <p className="font-bold justify-center flex">
-                                            {Math.floor(details.runtime / 60)}h {details.runtime % 60}min
+                                            S{details.number_of_seasons} E{details.number_of_episodes}
                                         </p>
                                     </div>
                                     {details.genres && details.genres.length > 0 && (
@@ -362,16 +367,12 @@ const SearchPage = ({ onLogout }) => {
                                     <div className='justify-center flex'>
                                         <Button className='w-36 h-8 mr-1' type="button" label="HomePage" icon="pi pi-users" outlined badgeClassName="p-badge-danger" onClick={() => window.open(details.homepage)}
                                             disabled={!details.homepage} />
-                                        <Button className='w-36 h-8 ml-1' type="button" label="Imdb" icon="pi pi-users" outlined badgeClassName="p-badge-danger" onClick={() => window.open('https://www.imdb.com/title/' + details.imdb_id)}
-                                            disabled={!details.imdb_id} />
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <p className="mt-5">{details.overview}</p>
-
-
                         <div className="h-full flex flex-col justify-end">
                             <div className="flex justify-between p-4">
                                 <div>
@@ -390,4 +391,4 @@ const SearchPage = ({ onLogout }) => {
     );
 };
 
-export default SearchPage;
+export default SerieSearch;

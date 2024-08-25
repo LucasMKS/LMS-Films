@@ -4,6 +4,8 @@ import LoginPage from './components/auth/LoginPage';
 import AuthService from './components/service/AuthService';
 import RatedPage from './components/local/RatedPage';
 import SearchPage from './components/local/SearchPage';
+import SerieSearch from './components/local/SerieSearch';
+import SerieRated from './components/local/SerieRated';
 
 function MainApp({ isAuthenticated, isAdmin, onLogin, onLogout }) {
   const location = useLocation();
@@ -14,8 +16,10 @@ function MainApp({ isAuthenticated, isAdmin, onLogin, onLogout }) {
         <Routes>
           <Route exact path="/" element={<LoginPage onLogin={onLogin} />} />
           <Route exact path="/login" element={<LoginPage onLogin={onLogin} />} />
-          <Route path="/home" element={isAuthenticated ? <SearchPage onLogout={onLogout} /> : <Navigate to="/login" />} />
-          <Route path="/avaliados" element={isAuthenticated ? <RatedPage onLogout={onLogout} /> : <Navigate to="/login" />} />
+          <Route path="/filmes" element={isAuthenticated ? <SearchPage onLogout={onLogout} /> : <Navigate to="/login" />} />
+          <Route path="/filmes/avaliados" element={isAuthenticated ? <RatedPage onLogout={onLogout} /> : <Navigate to="/login" />} />
+          <Route path="/series" element={isAuthenticated ? <SerieSearch onLogout={onLogout} /> : <Navigate to="/login" />} />
+          <Route path="/series/avaliados" element={isAuthenticated ? <SerieRated onLogout={onLogout} /> : <Navigate to="/login" />} />
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       </div>

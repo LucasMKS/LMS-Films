@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.lucasm.lmsfilmes.dto.FavoriteDTO;
-import com.lucasm.lmsfilmes.dto.RateDTO;
 import com.lucasm.lmsfilmes.dto.TmdbDTO;
 import com.lucasm.lmsfilmes.service.MovieService;
 

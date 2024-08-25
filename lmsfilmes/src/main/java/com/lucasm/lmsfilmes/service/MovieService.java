@@ -1,13 +1,10 @@
 package com.lucasm.lmsfilmes.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lucasm.lmsfilmes.dto.RateDTO;
 import com.lucasm.lmsfilmes.dto.TmdbDTO;
 import com.lucasm.lmsfilmes.dto.FavoriteDTO;
 import com.lucasm.lmsfilmes.model.FavoriteModel;
-import com.lucasm.lmsfilmes.model.MovieModel;
 import com.lucasm.lmsfilmes.repository.FavoriteRepository;
-import com.lucasm.lmsfilmes.repository.MovieRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -51,7 +48,7 @@ public class MovieService {
             String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(new URI(
-                            tmdbApiUrl + "/search/movie?query=" + encodedQuery + "&include_adult=false&language=pt-BR"))
+                            tmdbApiUrl + "/search/movie?query=" + encodedQuery + "&include_adult=true&language=pt-BR"))
                     .header("Authorization", "Bearer " + apiKey)
                     .header("Accept", "application/json")
                     .GET()
@@ -63,13 +60,12 @@ public class MovieService {
                 MovieSearchResponse searchResponse = objectMapper.readValue(response.body(), MovieSearchResponse.class);
                 return searchResponse.getResults();
             } else {
-                // Handle non-200 responses
-                reqRes.setMensagem("Detalhes não encontrado");
+                reqRes.setMensagem("Filme não encontrado");
                 return List.of(reqRes);
             }
         } catch (IOException | InterruptedException | URISyntaxException e) {
             e.printStackTrace();
-            reqRes.setMensagem("Detalhes não encontrado: " + e.getMessage());
+            reqRes.setMensagem("Filme não encontrado: " + e.getMessage());
             return List.of(reqRes);
         }
     }

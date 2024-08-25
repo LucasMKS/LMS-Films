@@ -18,20 +18,37 @@ public class RateController {
     @Autowired
     private RateService rateService;
 
-    @PostMapping("/rate/save")
+    @PostMapping("/rate/m/save")
     public ResponseEntity<RateDTO> ratingMovies(@RequestBody RateDTO ratingDTO) {
         return ResponseEntity.ok(rateService.ratingMovies(ratingDTO));
     }
 
-    @GetMapping("/rate/ratedcontent")
+    @GetMapping("/rate/m/ratedcontent")
     public ResponseEntity<RateDTO> searchMovies(@RequestParam String nickname) {
         RateDTO movies = rateService.ratedContent(nickname);
         return ResponseEntity.ok(movies);
     }
 
-    @PutMapping("rate/update")
+    @PutMapping("rate/m/update")
     public ResponseEntity<RateDTO> updateRating(@RequestBody RateDTO ratingDTO) {
         RateDTO updatedRating = rateService.updateRate(ratingDTO);
+        return ResponseEntity.ok(updatedRating);
+    }
+
+    @PostMapping("/rate/s/save")
+    public ResponseEntity<RateDTO> ratingSeries(@RequestBody RateDTO ratingDTO) {
+        return ResponseEntity.ok(rateService.ratingSeries(ratingDTO));
+    }
+
+    @GetMapping("/rate/s/ratedcontent")
+    public ResponseEntity<RateDTO> searchRatedSeries(@RequestParam String nickname) {
+        RateDTO movies = rateService.searchRatedSeries(nickname);
+        return ResponseEntity.ok(movies);
+    }
+
+    @PutMapping("rate/s/update")
+    public ResponseEntity<RateDTO> updateRatingSeries(@RequestBody RateDTO ratingDTO) {
+        RateDTO updatedRating = rateService.updateRatingSeries(ratingDTO);
         return ResponseEntity.ok(updatedRating);
     }
 

@@ -35,6 +35,7 @@ public class TmdbDTO {
     private List<TmdbDTO> results;
     private List<ProductionCompany> production_companies;
     private List<Genre> genres;
+    private String media_type = "movie";
 
     @Data
     public static class Genre {
