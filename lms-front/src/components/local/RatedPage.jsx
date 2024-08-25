@@ -17,8 +17,6 @@ import { Divider } from 'primereact/divider';
 
 import { Heart } from 'lucide-react';
 import { HeartOff } from 'lucide-react';
-import { Star } from 'lucide-react';
-import { House } from 'lucide-react';
 import posterImagem from '../../assets/LMS_Poster.png';
 import bgImagem from '../../assets/LMS-BG.png';
 import logo from '../../assets/logo.png';
@@ -32,49 +30,44 @@ const RatedPage = ({ onLogout }) => {
     const [details, setDetails] = useState({});
     const [valueRate, setValueRate] = useState('');
     const [blocked, setBlocked] = useState(false);
-    const [groupBy, setGroupBy] = useState('name'); // Estado para o critério de agrupamento
-    const [currentPage, setCurrentPage] = useState(0); // Página atual
-    const [totalRecords, setTotalRecords] = useState(0); // Total de registros
-    const [initialLoad, setInitialLoad] = useState(true);
-    const itemsPerPage = 18; // Itens por página
+    const [groupBy, setGroupBy] = useState('name');
+    const [currentPage, setCurrentPage] = useState(0);
+    const [totalRecords, setTotalRecords] = useState(0);
+    const [initialLoad, setInitialLoad] = useState(true)
     const [favorites, setFavorites] = useState({});
     const [favoritesList, setFavoritesList] = useState({})
     const [visibleLeft, setVisibleLeft] = useState(false);
 
 
     const toast = useRef(null);
+    const itemsPerPage = 18;
 
     useEffect(() => {
-        if (initialLoad) {
+        const loadContent = async () => {
             setBlocked(true);
-            ratedContent().finally(() => {
-                setInitialLoad(false);
-            });
-        } else {
-            ratedContent();
-        }
+            await ratedContent();
+            setInitialLoad(false);
+            setTimeout(() => setBlocked(false), 1000);
+        };
+
+        if (initialLoad) loadContent();
+        else ratedContent();
     }, [currentPage, groupBy]);
 
-    useEffect(() => {
-        if (blocked) {
-            setTimeout(() => setBlocked(false), 1000);
-        }
-    }, [blocked]);
 
     const ratedContent = async () => {
         try {
             const response = await AuthService.getRatedContent();
             setContent(response.movieList || []);
             setTotalRecords(response.movieList?.length || 0);
-
             if (response.error) showToast('error', 'Error', response.error);
         } catch (error) {
             setContent([]);
             showToast('error', 'Error', error.message);
         }
-    }
+    };
 
-    const getAllFavorites = async (item) => {
+    const getAllFavorites = async () => {
         try {
             const response = await AuthService.getAllFavorites();
             setFavoritesList(response.favoriteList || []);
@@ -83,30 +76,17 @@ const RatedPage = ({ onLogout }) => {
             setFavoritesList([]);
             showToast('error', 'Error', error.message);
         }
-    }
+    };
 
     const handleFavoriteToggle = async (movieId, title) => {
         try {
-            // Atualiza o estado local
             const currentFavoriteStatus = favorites[movieId] || false;
             const newFavoriteStatus = !currentFavoriteStatus;
-
-            setFavorites(prev => ({
-                ...prev,
-                [movieId]: newFavoriteStatus
-            }));
-
-            // Envia a solicitação para o backend
+            setFavorites(prev => ({ ...prev, [movieId]: newFavoriteStatus }));
             await AuthService.toggleFavorite(movieId, title, newFavoriteStatus);
-
-            // Atualiza a lista de favoritos na Sidebar
             await getAllFavorites();
         } catch (error) {
-            // Em caso de erro, reverte o estado
-            setFavorites(prev => ({
-                ...prev,
-                [movieId]: !(favorites[movieId] || false)
-            }));
+            setFavorites(prev => ({ ...prev, [movieId]: !(favorites[movieId] || false) }));
             showError(error.message);
         }
     };
@@ -114,11 +94,7 @@ const RatedPage = ({ onLogout }) => {
     const fetchFavoriteStatus = async (movieId) => {
         try {
             const response = await AuthService.getFavoriteStatus(movieId);
-            console.log(response)
-            setFavorites(prev => ({
-                ...prev,
-                [movieId]: response.favorite
-            }));
+            setFavorites(prev => ({ ...prev, [movieId]: response.favorite }));
         } catch (error) {
             console.error('Failed to fetch favorite status:', error);
         }
@@ -127,7 +103,7 @@ const RatedPage = ({ onLogout }) => {
     const search = (event) => {
         const query = event.query.trim().toLowerCase();
         setFilteredContent(query ? content.filter(cont => cont.title && cont.title.toLowerCase().startsWith(query)) : [...content]);
-    }
+    };
 
     const autocomplete = (e) => {
         const selected = e.value;
@@ -137,7 +113,7 @@ const RatedPage = ({ onLogout }) => {
         } else {
             if (!selected) ratedContent();
         }
-    }
+    };
 
     const handleClickOpen = async (content) => {
         setSelectedContent(content);
@@ -145,8 +121,6 @@ const RatedPage = ({ onLogout }) => {
             try {
                 const response = await AuthService.details(content.movieId);
                 setDetails(response);
-
-                // Buscar o status de favorito
                 fetchFavoriteStatus(content.movieId);
                 if (response.error) showToast('error', 'Error', response.error);
             } catch (error) {
@@ -157,7 +131,7 @@ const RatedPage = ({ onLogout }) => {
     };
 
     const handleOpenSidebar = async (item) => {
-        getAllFavorites(item)
+        await getAllFavorites(item)
         setVisibleLeft(true);
 
     };
@@ -167,9 +141,7 @@ const RatedPage = ({ onLogout }) => {
             const response = await AuthService.updateRating(selectedContent.movieId, valueRate);
             setContent(prevContent =>
                 prevContent.map(item =>
-                    item.movieId === selectedContent.movieId
-                        ? { ...item, myVote: valueRate }
-                        : item
+                    item.movieId === selectedContent.movieId ? { ...item, myVote: valueRate } : item
                 )
             );
             if (response.mensagem) showToast('success', 'Success', response.mensagem);
@@ -183,39 +155,48 @@ const RatedPage = ({ onLogout }) => {
 
     const showToast = (severity, summary, detail) => {
         toast.current.show({ severity, summary, detail, life: 3000 });
-    }
+    };
+
+    const getGroupedContent = () => {
+        const sortedContent = [...content].sort((a, b) => {
+            switch (groupBy) {
+                case 'name':
+                    return a.title.localeCompare(b.title);
+                case 'rating':
+                    return b.myVote - a.myVote;
+                case 'date':
+                    return new Date(b.created_at) - new Date(a.created_at);
+                default:
+                    return 0;
+            }
+        });
+
+        const start = currentPage * itemsPerPage;
+        return sortedContent.slice(start, start + itemsPerPage);
+    };
 
     const menuItems = [
         {
-            label: 'Filmes', 
-            icon: 'pi pi-video', 
+            label: 'Filmes',
+            icon: 'pi pi-video',
             items: [
-                {
-                    label: 'Pesquisar', url: '/filmes'
-                },
-                {
-                    label: 'Avaliados', url: '/filmes/avaliados'
-                }
+                { label: 'Pesquisar', url: '/filmes', icon: 'pi pi-search' },
+                { label: 'Avaliados', url: '/filmes/avaliados', icon: 'pi pi-star-fill' }
             ]
         },
         {
             label: 'Series',
             icon: 'pi pi-play-circle',
             items: [
-                {
-                    label: 'Pesquisar', url: '/series'
-                },
-                {
-                    label: 'Avaliados', url: '/series/avaliados'
-                }                
+                { label: 'Pesquisar', url: '/series', icon: 'pi pi-search' },
+                { label: 'Avaliados', url: '/series/avaliados', icon: 'pi pi-star-fill' }
             ]
         },
     ];
 
-    const menuStart = <img alt="logo" src={logo} height="40" className="mr-2 h-14" />;
+    const menuStart = <img alt="logo" src={logo} className="mr-4 h-14" />;
     const menuEnd = (
         <div className="flex align-items-center gap-2 items-center">
-
             <AutoComplete
                 placeholder='Buscar'
                 field="title"
@@ -229,33 +210,20 @@ const RatedPage = ({ onLogout }) => {
         </div>
     );
 
-    // Função para agrupar conteúdo
-    const getGroupedContent = () => {
-        const sortedContent = (() => {
-            switch (groupBy) {
-                case 'name':
-                    return [...content].sort((a, b) => a.title.localeCompare(b.title));
-                case 'rating':
-                    return [...content].sort((a, b) => b.myVote - a.myVote);
-                case 'date':
-                    return [...content].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-                default:
-                    return content;
-            }
-        })();
-
-        // Paginação
-        const start = currentPage * itemsPerPage;
-        const end = start + itemsPerPage;
-        return sortedContent.slice(start, end);
-    };
-
     const customHeader = (
         <div className="flex align-items-center gap-2">
             <Heart className='text-red-500' />
             <span className="font-bold">Favoritos</span>
         </div>
     );
+
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        const year = date.getUTCFullYear();
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        return `${day}/${month}/${year}`;
+    };
 
     return (
         <div className="relative" style={{
@@ -272,10 +240,10 @@ const RatedPage = ({ onLogout }) => {
             <Sidebar header={customHeader} visible={visibleLeft} position="right" onHide={() => setVisibleLeft(false)}>
                 {favoritesList && favoritesList.length > 0 && (
                     favoritesList.map((item) => (
-                        <>
+                        <React.Fragment key={item.movieId}>
                             <Button label={item.title} severity="secondary" text className="w-full mt-2" onClick={() => handleClickOpen(item)} />
                             <Divider />
-                        </>
+                        </React.Fragment>
                     ))
                 )}
             </Sidebar>
@@ -285,18 +253,18 @@ const RatedPage = ({ onLogout }) => {
                     <p className='text-white font-bold text-5xl mb-4'>Avaliados</p>
                     <p className='text-white  mb-2'>Agrupar por</p>
                     <div className="flex flex-wrap gap-3 text-white">
-                        <div className="flex align-items-center">
-                            <RadioButton inputId="groupByName" name="groupBy" value="name" onChange={(e) => setGroupBy(e.value)} checked={groupBy === 'name'} />
-                            <label htmlFor="groupByName" className="ml-2">Nome</label>
-                        </div>
-                        <div className="flex align-items-center">
-                            <RadioButton inputId="groupByRating" name="groupBy" value="rating" onChange={(e) => setGroupBy(e.value)} checked={groupBy === 'rating'} />
-                            <label htmlFor="groupByRating" className="ml-2">Nota</label>
-                        </div>
-                        <div className="flex align-items-center">
-                            <RadioButton inputId="groupByDate" name="groupBy" value="date" onChange={(e) => setGroupBy(e.value)} checked={groupBy === 'date'} />
-                            <label htmlFor="groupByDate" className="ml-2">Data</label>
-                        </div>
+                        {['name', 'rating', 'date'].map((group) => (
+                            <div key={group} className="flex align-items-center">
+                                <RadioButton
+                                    inputId={`groupBy${group}`}
+                                    name="groupBy"
+                                    value={group}
+                                    onChange={(e) => setGroupBy(e.value)}
+                                    checked={groupBy === group}
+                                />
+                                <label htmlFor={`groupBy${group}`} className="ml-2">{group.charAt(0).toUpperCase() + group.slice(1)}</label>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
@@ -316,11 +284,7 @@ const RatedPage = ({ onLogout }) => {
                                 <>
                                     <div className='font-bold'>{`Nota: ${item.myVote}`}</div>
                                     {item.created_at && (
-                                        <div>Adição: {new Date(item.created_at).toLocaleDateString('pt-BR', {
-                                            day: '2-digit',
-                                            month: '2-digit',
-                                            year: 'numeric'
-                                        })}</div>
+                                        <div>Adição: {formatDate(item.created_at)}</div>
                                     )}
                                 </>
                             )}
@@ -340,12 +304,7 @@ const RatedPage = ({ onLogout }) => {
                 />
 
                 {selectedContent && (
-                    <Dialog
-                        header={selectedContent.title}
-                        visible={open}
-                        style={{ width: '38vw' }}
-                        onHide={() => setOpen(false)}
-                    >
+                    <Dialog header={selectedContent.title} visible={open} style={{ width: '40vw' }} onHide={() => setOpen(false)}>
                         <div>
                             <p className="italic">{details.tagline}</p>
                             {details.production_companies && details.production_companies.length > 0 && (
@@ -376,7 +335,6 @@ const RatedPage = ({ onLogout }) => {
                                         : posterImagem}
                                     alt="Image"
                                 />
-
                                 <div>
                                     <p className="font-bold justify-center flex">
                                         {new Date(details.release_date).toLocaleDateString('pt-BR', {
@@ -413,18 +371,14 @@ const RatedPage = ({ onLogout }) => {
                                 </div>
                             </div>
                         </div>
-
                         <p className="mt-5">{details.overview}</p>
-
-                        <div className="h-full flex flex-col justify-end">
-                            <div className="flex justify-between p-4">
-                                <div className="mr-4">
-                                    <InputNumber placeholder="Nota de 0-10 " minFractionDigits={1} inputId="minmax-buttons" value={valueRate} onValueChange={(e) => setValueRate(e.value)} mode="decimal" step={0.1} showButtons min={1} max={10} />
-                                </div>
-                                <div className="flex space-x-2 justify-end">
-                                    <Button label="Fechar" icon="pi pi-times" onClick={() => setOpen(false)} className="p-button-text" />
-                                    <Button label="Avaliar" icon="pi pi-check" onClick={updateRate} autoFocus />
-                                </div>
+                        <div className="flex mt-4">
+                            <div className="mr-12">
+                                <InputNumber placeholder="Nota de 0-10 " minFractionDigits={1} inputId="minmax-buttons" value={valueRate} onValueChange={(e) => setValueRate(e.value)} mode="decimal" step={0.1} showButtons min={1} max={10} />
+                            </div>
+                            <div>
+                                <Button label="Fechar" icon="pi pi-times" onClick={() => setOpen(false)} severity="secondary" raised className='mr-2' />
+                                <Button label="Avaliar" icon="pi pi-check" onClick={updateRate} severity="info" raised />
                             </div>
                         </div>
                     </Dialog>

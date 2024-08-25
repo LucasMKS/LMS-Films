@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import AuthService from '../service/AuthService';
-import { useNavigate } from 'react-router-dom';
 import { Button } from 'primereact/button';
 import { Dialog } from 'primereact/dialog';
 import { Card } from 'primereact/card';
@@ -19,8 +18,6 @@ import { Divider } from 'primereact/divider';
 
 import { Heart } from 'lucide-react';
 import { HeartOff } from 'lucide-react';
-import { Star } from 'lucide-react';
-import { House } from 'lucide-react';
 import posterImagem from '../../assets/LMS_Poster.png';
 import bgImagem from '../../assets/LMS-BG.png';
 import logo from '../../assets/logo.png';
@@ -31,7 +28,7 @@ const SerieSearch = ({ onLogout }) => {
     const [details, setDetails] = useState({});
     const [selectedContent, setSelectedContent] = useState(null);
     const [open, setOpen] = useState(false);
-    const [valueRate, setValueRate] = useState(1);
+    const [valueRate, setValueRate] = useState('');
     const [blocked, setBlocked] = useState(false);
     const [first, setFirst] = useState(0);
     const [totalRecords, setTotalRecords] = useState(0);
@@ -39,7 +36,6 @@ const SerieSearch = ({ onLogout }) => {
     const [favoritesList, setFavoritesList] = useState({})
     const [visibleLeft, setVisibleLeft] = useState(false);
     const toast = useRef(null);
-    const navigate = useNavigate();
 
     useEffect(() => {
         setBlocked(true);
@@ -53,19 +49,12 @@ const SerieSearch = ({ onLogout }) => {
         }
     }, [blocked]);
 
-    const handleLogout = () => {
-        onLogout();
-        navigate('/login');
-    };
-
     const handleClickOpen = async (content) => {
         setSelectedContent(content);
         if (content) {
             try {
                 const response = await AuthService.detailSeries(content.id);
                 setDetails(response);
-
-                // Buscar o status de favorito
                 fetchFavoriteStatus(content.id);
             } catch (error) {
                 showError(error.message);
@@ -93,9 +82,15 @@ const SerieSearch = ({ onLogout }) => {
         event.preventDefault();
         setOpen(false);
         try {
-            const response = await AuthService.sendSerieRate(selectedContent.name, selectedContent.id, valueRate, selectedContent.poster_path);
+            let ratingToSend = valueRate;
+
+            if (ratingToSend === null || ratingToSend === '') {
+                ratingToSend = 5;
+            }
+            console.log()
+            const response = await AuthService.sendSerieRate(selectedContent.name, selectedContent.id, ratingToSend, selectedContent.poster_path);
             response.mensagem ? showSuccess(response.mensagem) : showError(response.error);
-            setValueRate(1);
+            setValueRate('');
         } catch (error) {
             showError(error.message);
         }
@@ -105,48 +100,43 @@ const SerieSearch = ({ onLogout }) => {
         try {
             const response = await AuthService.popularSeries(page);
             setResults(response);
-            
             setTotalRecords(500);
         } catch (error) {
             setResults([]);
             showError(error.message);
         }
-    }
+    };
 
     const handleFavoriteToggle = async (serieId, name) => {
         try {
-            // Envia a solicitação para o backend
             const newFavoriteStatus = !favorites[serieId];
             await AuthService.toggleSerieFavorite(serieId, name, newFavoriteStatus);
-            
-            // Atualiza o estado local somente após a resposta bem-sucedida da API
             setFavorites(prev => ({
                 ...prev,
                 [serieId]: newFavoriteStatus
             }));
-            
+
         } catch (error) {
-            // Em caso de erro, reverte o estado e mostra a mensagem de erro
             showError(error.message);
         }
     };
-    
 
 
-const fetchFavoriteStatus = async (serieId) => {
-    try {
-        const response = await AuthService.getFavoriteSeriesStatus(serieId);
 
-        if (response.statusCode === 0) {
-            setFavorites(prev => ({
-                ...prev,
-                [serieId]: response.favorite
-            }));
+    const fetchFavoriteStatus = async (serieId) => {
+        try {
+            const response = await AuthService.getFavoriteSeriesStatus(serieId);
+
+            if (response.statusCode === 0) {
+                setFavorites(prev => ({
+                    ...prev,
+                    [serieId]: response.favorite
+                }));
+            }
+        } catch (error) {
+            console.error('Failed to fetch favorite status:', error);
         }
-    } catch (error) {
-        console.error('Failed to fetch favorite status:', error);
-    }
-};
+    };
 
 
 
@@ -154,53 +144,45 @@ const fetchFavoriteStatus = async (serieId) => {
         setFirst(event.first);
         const pageNumber = Math.ceil(event.first / 20) + 1;
         loadPopularSeries(pageNumber);
-    }
+    };
 
     const showToast = (severity, summary, detail) => {
         toast.current.show({ severity, summary, detail, life: 3000 });
-    }
+    };
 
     const showError = (message) => showToast('error', 'Error', message);
     const showSuccess = (message) => showToast('success', 'Success', message);
 
     const menuItems = [
         {
-            label: 'Filmes', 
-            icon: 'pi pi-video', 
+            label: 'Filmes',
+            icon: 'pi pi-video',
             items: [
-                {
-                    label: 'Pesquisar', url: '/filmes'
-                },
-                {
-                    label: 'Avaliados', url: '/filmes/avaliados'
-                }
+                { label: 'Pesquisar', url: '/filmes', icon: 'pi pi-search' },
+                { label: 'Avaliados', url: '/filmes/avaliados', icon: 'pi pi-star-fill' }
             ]
         },
         {
             label: 'Series',
             icon: 'pi pi-play-circle',
             items: [
-                {
-                    label: 'Pesquisar', url: '/series'
-                },
-                {
-                    label: 'Avaliados', url: '/series/avaliados'
-                }                
+                { label: 'Pesquisar', url: '/series', icon: 'pi pi-search' },
+                { label: 'Avaliados', url: '/series/avaliados', icon: 'pi pi-star-fill' }
             ]
         },
     ];
 
     const handleFavoriteDetails = async (content) => {
-        setSearchTerm(content.title); // Define o termo de pesquisa para o título selecionado
+        setSearchTerm(content.title);
         try {
-            const response = await AuthService.searchSeries(content.name); // Realiza a pesquisa pelo título
-            setResults(response && response.length > 0 ? response : []); // Atualiza os resultados para mostrar apenas o item correspondente
+            const response = await AuthService.searchSeries(content.name); 
+            setResults(response && response.length > 0 ? response : []);
             if (!response || response.length === 0) {
-                showError("Nenhum resultado encontrado"); // Exibe erro se não houver resultados
+                showError("Nenhum resultado encontrado");
             }
         } catch (error) {
-            setResults([]); // Limpa os resultados em caso de erro
-            showError(error.message); // Exibe a mensagem de erro
+            setResults([]);
+            showError(error.message);
         }
     };
 
@@ -213,7 +195,7 @@ const fetchFavoriteStatus = async (serieId) => {
             setFavoritesList([]);
             showToast('error', 'Error', error.message);
         }
-    }
+    };
 
     const handleOpenSidebar = async () => {
         getAllFavorites()
@@ -373,15 +355,14 @@ const fetchFavoriteStatus = async (serieId) => {
                         </div>
 
                         <p className="mt-5">{details.overview}</p>
-                        <div className="h-full flex flex-col justify-end">
-                            <div className="flex justify-between p-4">
-                                <div>
-                                    <InputNumber placeholder="Nota de 0-10 " minFractionDigits={1} inputId="minmax-buttons" value={valueRate} onValueChange={(e) => setValueRate(e.value)} mode="decimal" step={0.1} showButtons min={1} max={10} />
-                                </div>
-                                <div className="flex space-x-2 justify-end">
-                                    <Button label="Fechar" icon="pi pi-times" onClick={() => setOpen(false)} severity="secondary" raised />
-                                    <Button label="Avaliar" icon="pi pi-check" onClick={handleSubmit} severity="info" raised />
-                                </div>
+
+                        <div className="flex mt-4">
+                            <div className="mr-12">
+                                <InputNumber placeholder="Nota de 0-10 " maxFractionDigits={1} inputId="minmax-buttons" prefix="Nota: " value={valueRate} onValueChange={(e) => setValueRate(e.value)} mode="decimal" step={0.1} showButtons min={1} max={10} />
+                            </div>
+                            <div className="">
+                                <Button label="Fechar" icon="pi pi-times" onClick={() => { setOpen(false); setValueRate('') }} severity="secondary" raised className='mr-2' />
+                                <Button label="Avaliar" icon="pi pi-check" onClick={handleSubmit} severity="info" raised />
                             </div>
                         </div>
                     </Dialog>

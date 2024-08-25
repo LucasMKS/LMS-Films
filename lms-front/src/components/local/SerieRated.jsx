@@ -30,16 +30,15 @@ const SerieRated = ({ onLogout }) => {
     const [details, setDetails] = useState({});
     const [valueRate, setValueRate] = useState('');
     const [blocked, setBlocked] = useState(false);
-    const [groupBy, setGroupBy] = useState('name'); // Estado para o critério de agrupamento
-    const [currentPage, setCurrentPage] = useState(0); // Página atual
-    const [totalRecords, setTotalRecords] = useState(0); // Total de registros
+    const [groupBy, setGroupBy] = useState('name');
+    const [currentPage, setCurrentPage] = useState(0);
+    const [totalRecords, setTotalRecords] = useState(0);
     const [initialLoad, setInitialLoad] = useState(true);
-    const itemsPerPage = 18; // Itens por página
     const [favorites, setFavorites] = useState({});
     const [favoritesList, setFavoritesList] = useState({})
     const [visibleLeft, setVisibleLeft] = useState(false);
 
-
+    const itemsPerPage = 18;
     const toast = useRef(null);
 
     useEffect(() => {
@@ -70,7 +69,7 @@ const SerieRated = ({ onLogout }) => {
             setContent([]);
             showToast('error', 'Error', error.message);
         }
-    }
+    };
 
     const getAllFavorites = async () => {
         try {
@@ -81,15 +80,12 @@ const SerieRated = ({ onLogout }) => {
             setFavoritesList([]);
             showToast('error', 'Error', error.message);
         }
-    }
+    };
 
     const handleFavoriteToggle = async (serieId, name) => {
         try {
-            // Envia a solicitação para o backend
             const newFavoriteStatus = !favorites[serieId];
             await AuthService.toggleSerieFavorite(serieId, name, newFavoriteStatus);
-
-            // Atualiza o estado local somente após a resposta bem-sucedida da API
             setFavorites(prev => ({
                 ...prev,
                 [serieId]: newFavoriteStatus
@@ -131,7 +127,7 @@ const SerieRated = ({ onLogout }) => {
     const search = (event) => {
         const query = event.query.trim().toLowerCase();
         setFilteredContent(query ? content.filter(cont => cont.name && cont.name.toLowerCase().startsWith(query)) : [...content]);
-    }
+    };
 
     const autocomplete = (e) => {
         const selected = e.value;
@@ -141,7 +137,7 @@ const SerieRated = ({ onLogout }) => {
         } else {
             if (!selected) ratedContent();
         }
-    }
+    };
 
     const handleClickOpen = async (content) => {
         setSelectedContent(content);
@@ -149,8 +145,6 @@ const SerieRated = ({ onLogout }) => {
             try {
                 const response = await AuthService.detailSeries(content.serieId);
                 setDetails(response);
-
-                // Buscar o status de favorito
                 fetchFavoriteStatus(content.id);
             } catch (error) {
                 showError(error.message);
@@ -186,31 +180,23 @@ const SerieRated = ({ onLogout }) => {
 
     const showToast = (severity, summary, detail) => {
         toast.current.show({ severity, summary, detail, life: 3000 });
-    }
+    };
 
     const menuItems = [
         {
             label: 'Filmes',
             icon: 'pi pi-video',
             items: [
-                {
-                    label: 'Pesquisar', url: '/filmes', icon: 'pi pi-search'
-                },
-                {
-                    label: 'Avaliados', url: '/filmes/avaliados', icon: 'pi pi-star-fill'
-                }
+                { label: 'Pesquisar', url: '/filmes', icon: 'pi pi-search' },
+                { label: 'Avaliados', url: '/filmes/avaliados', icon: 'pi pi-star-fill' }
             ]
         },
         {
             label: 'Series',
             icon: 'pi pi-play-circle',
             items: [
-                {
-                    label: 'Pesquisar', url: '/series', icon: 'pi pi-search'
-                },
-                {
-                    label: 'Avaliados', url: '/series/avaliados', icon: 'pi pi-star-fill'
-                }
+                { label: 'Pesquisar', url: '/series', icon: 'pi pi-search' },
+                { label: 'Avaliados', url: '/series/avaliados', icon: 'pi pi-star-fill' }
             ]
         },
     ];
@@ -218,7 +204,6 @@ const SerieRated = ({ onLogout }) => {
     const menuStart = <img alt="logo" src={logo} height="40" className="mr-2 h-14" />;
     const menuEnd = (
         <div className="flex align-items-center gap-2 items-center">
-
             <AutoComplete
                 placeholder='Buscar'
                 field="name"
@@ -232,7 +217,6 @@ const SerieRated = ({ onLogout }) => {
         </div>
     );
 
-    // Função para agrupar conteúdo
     const getGroupedContent = () => {
         const groupedContent = content.reduce((groups, item) => {
             const groupKey = (() => {
@@ -268,7 +252,6 @@ const SerieRated = ({ onLogout }) => {
             result = result.concat(groupedContent[key]);
         });
 
-        // Paginação
         const start = currentPage * itemsPerPage;
         const end = start + itemsPerPage;
         return result.slice(start, end);
@@ -440,15 +423,13 @@ const SerieRated = ({ onLogout }) => {
 
                         <p className="mt-5">{details.overview}</p>
 
-                        <div className="h-full flex flex-col justify-end">
-                            <div className="flex justify-between p-4">
-                                <div className="mr-4">
-                                    <InputNumber placeholder="Nota de 0-10 " minFractionDigits={1} inputId="minmax-buttons" value={valueRate} onValueChange={(e) => setValueRate(e.value)} mode="decimal" step={0.1} showButtons min={1} max={10} />
-                                </div>
-                                <div className="flex space-x-2 justify-end">
-                                    <Button label="Fechar" icon="pi pi-times" onClick={() => setOpen(false)} className="p-button-text" />
-                                    <Button label="Avaliar" icon="pi pi-check" onClick={updateRate} autoFocus />
-                                </div>
+                        <div className="flex mt-4">
+                            <div className="mr-12">
+                                <InputNumber placeholder="Nota de 0-10 " minFractionDigits={1} inputId="minmax-buttons" value={valueRate} onValueChange={(e) => setValueRate(e.value)} mode="decimal" step={0.1} showButtons min={1} max={10} />
+                            </div>
+                            <div>
+                                <Button label="Fechar" icon="pi pi-times" onClick={() => setOpen(false)} severity="secondary" raised className='mr-2' />
+                                <Button label="Avaliar" icon="pi pi-check" onClick={updateRate} severity="info" raised />
                             </div>
                         </div>
                     </Dialog>
