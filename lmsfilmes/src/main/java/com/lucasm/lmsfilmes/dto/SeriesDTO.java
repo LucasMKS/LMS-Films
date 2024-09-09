@@ -6,12 +6,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SeriesDTO {
-    
+ 
     private int statusCode;
     private String error;
     private String mensagem;
@@ -67,6 +69,11 @@ public class SeriesDTO {
         private String origin_country;
     }
 
+    public SeriesDTO(String mensagem) {
+        this.mensagem = mensagem;
+    }
+
+    
 
 }
 

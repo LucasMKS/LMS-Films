@@ -5,6 +5,9 @@ import java.util.Date;
 import jakarta.persistence.*;
 import lombok.Data;
 
+/**
+ * Modelo de dados para filmes.
+ */
 @Entity
 @Table(name = "movies")
 @Data

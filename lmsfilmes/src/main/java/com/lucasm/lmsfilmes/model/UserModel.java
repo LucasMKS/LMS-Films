@@ -11,28 +11,31 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
-@Table(name = "users")
 @Data
+@Table(name = "users")
 public class UserModel implements UserDetails {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", unique = true)
     private Long id;
 
+    @Column(name = "name", length = 100, nullable = false)
     private String name;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "email", length = 100, nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "nickname", length = 60, nullable = false, unique = true)
     private String nickname;
 
+    @Column(name = "password", length = 100, nullable = false)
     private String password;
 
-    @Column(nullable = false)
-    private String role = "USER"; // Valor padrão "USER"
+    @Column(name = "role", nullable = false)
+    private String role = "USER"; // Padrão "USER"
 
-        @Override
+    // Define as autoridades do usuário com base no cargo (role)
+    @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(role));
     }

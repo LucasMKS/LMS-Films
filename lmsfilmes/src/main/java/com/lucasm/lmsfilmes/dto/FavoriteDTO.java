@@ -32,6 +32,11 @@ public class FavoriteDTO {
         this.favorite = favorite;
     }
 
+    public FavoriteDTO(int statusCode, String mensagem) {
+        this.statusCode = statusCode;
+        this.mensagem = mensagem;
+    }
+
     public boolean isFavorite() {
         return favorite;
     }

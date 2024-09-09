@@ -8,6 +8,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
 
+/**
+ * Modelo de dados para séries favoritas.
+ */
 @Entity
 @Table(name = "favorite_series")
 @Data

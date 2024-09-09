@@ -18,10 +18,12 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.net.URLEncoder;
 
+/**
+ * Serviço para buscar e manipular séries, incluindo favoritos.
+ */
 @Service
 public class SerieService {
 
@@ -42,13 +44,17 @@ public class SerieService {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Busca séries com base na consulta fornecida.
+     * 
+     * @param query A consulta de pesquisa
+     * @return Lista de séries que correspondem à consulta
+     */
     public List<SeriesDTO> searchSeries(String query) {
-        SeriesDTO serieDTO = new SeriesDTO();
         try {
             String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(new URI(
-                            tmdbApiUrl + "/search/tv?query=" + encodedQuery + "&include_adult=true&language=pt-BR"))
+                    .uri(new URI(tmdbApiUrl + "/search/tv?query=" + encodedQuery + "&include_adult=false&language=pt-BR"))
                     .header("Authorization", "Bearer " + apiKey)
                     .header("Accept", "application/json")
                     .GET()
@@ -60,18 +66,20 @@ public class SerieService {
                 MovieSearchResponse searchResponse = objectMapper.readValue(response.body(), MovieSearchResponse.class);
                 return searchResponse.getResults();
             } else {
-                serieDTO.setMensagem("Serie não encontrado");
-                return List.of(serieDTO);
+                return List.of(new SeriesDTO("Série não encontrada"));
             }
         } catch (IOException | InterruptedException | URISyntaxException e) {
-            e.printStackTrace();
-            serieDTO.setMensagem("Serie não encontrado: " + e.getMessage());
-            return List.of(serieDTO);
+            return List.of(new SeriesDTO("Série não encontrada: " + e.getMessage()));
         }
     }
 
+    /**
+     * Obtém os detalhes de uma série específica.
+     * 
+     * @param serieId O ID da série
+     * @return Detalhes da série
+     */
     public SeriesDTO getSeriesDetails(String serieId) {
-        SeriesDTO seriesDTO = new SeriesDTO();
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(new URI(tmdbApiUrl + "/tv/" + serieId + "?language=pt-BR"))
@@ -87,18 +95,20 @@ public class SerieService {
                 serie.setMensagem("Detalhes da serie encontrado com sucesso");
                 return serie;
             } else {
-                seriesDTO.setMensagem("Detalhes da serie não encontrado");
-                return seriesDTO;
+                return new SeriesDTO("Detalhes da série não encontrados");
             }
         } catch (IOException | InterruptedException | URISyntaxException e) {
-            e.printStackTrace();
-            seriesDTO.setMensagem("Detalhes da serie não encontrado: " + e.getMessage());
-            return seriesDTO;
+            return new SeriesDTO("Detalhes da série não encontrados: " + e.getMessage());
         }
     }
 
+    /**
+     * Obtém séries populares para uma página específica.
+     * 
+     * @param page Número da página
+     * @return Lista de séries populares
+     */
     public List<SeriesDTO> seriePopular(int page) {
-        SeriesDTO serieDTO = new SeriesDTO();
         try {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(new URI(tmdbApiUrl + "/tv/popular?language=pt-BR&page=" + page))
@@ -113,52 +123,67 @@ public class SerieService {
                 MovieSearchResponse searchResponse = objectMapper.readValue(response.body(), MovieSearchResponse.class);
                 return searchResponse.getResults();
             } else {
-                serieDTO.setMensagem("Series populares não encontrado");
-                return List.of(serieDTO);
+                return List.of(new SeriesDTO("Séries populares não encontradas"));
             }
         } catch (IOException | InterruptedException | URISyntaxException e) {
-            e.printStackTrace();
-            serieDTO.setMensagem("Series populares não encontrado: " + e.getMessage());
-            return List.of(serieDTO);
+            return List.of(new SeriesDTO("Séries populares não encontradas: " + e.getMessage()));
         }
     }
 
+    /**
+     * Obtém todas as séries favoritas de um usuário.
+     * 
+     * @param nickname O nickname do usuário
+     * @return DTO com lista de séries favoritas
+     */
     public FavoriteSerieDTO getAllSeriesFavorites(String nickname) {
-        FavoriteSerieDTO favSerieDTO = new FavoriteSerieDTO();
         try {
             List<FavoriteSerieModel> result = favoriteSerieRepository.findAllByNickname(nickname);
-             List<FavoriteSerieModel> favoriteMovies = result.stream()
+            List<FavoriteSerieModel> favoriteSeries = result.stream()
                 .filter(FavoriteSerieModel::isFavorite)
                 .collect(Collectors.toList());
-            if (!favoriteMovies.isEmpty()) {
-                favSerieDTO.setFavoriteSerieList(favoriteMovies);
-                favSerieDTO.setStatusCode(200);
-                favSerieDTO.setMensagem("Filmes favoritados encontrados");
+
+            if (!favoriteSeries.isEmpty()) {
+                return new FavoriteSerieDTO(favoriteSeries, 200, "Séries favoritas encontradas");
+
             } else {
-                favSerieDTO.setStatusCode(404);
-                favSerieDTO.setError("Nenhum filme favoritado encontrado");
+                return new FavoriteSerieDTO(null, 404, "Nenhuma série favoritada encontrada");
             }
         } catch (Exception e) {
-            favSerieDTO.setStatusCode(500);
-            favSerieDTO.setError("Erro ao buscar filmes favoritados: " + e.getMessage());
+            return new FavoriteSerieDTO(null, 500, "Erro ao buscar séries favoritas: " + e.getMessage());
         }
-        return favSerieDTO;
     }
 
+    /**
+     * Alterna o status de favorito de uma série.
+     * 
+     * @param favoriteDTO DTO com informações sobre a série favorita
+     */
     public void toggleSerieFavorite(FavoriteSerieDTO favoriteDTO) {
-        Optional<FavoriteSerieModel> optionalFavorite = favoriteSerieRepository.findBySerieIdAndNickname(favoriteDTO.getSerieId(), favoriteDTO.getNickname());
-        FavoriteSerieModel favoriteSerieMovie = optionalFavorite.orElseGet(() -> new FavoriteSerieModel());
-        favoriteSerieMovie.setSerieId(favoriteDTO.getSerieId());
-        favoriteSerieMovie.setNickname(favoriteDTO.getNickname());
-        favoriteSerieMovie.setFavorite(favoriteDTO.isFavorite());
-        favoriteSerieMovie.setName(favoriteDTO.getName());
-        favoriteSerieRepository.save(favoriteSerieMovie);
+        FavoriteSerieModel favoriteSerie = favoriteSerieRepository
+            .findBySerieIdAndNickname(favoriteDTO.getSerieId(), favoriteDTO.getNickname())
+            .orElse(new FavoriteSerieModel());
+
+        favoriteSerie.setSerieId(favoriteDTO.getSerieId());
+        favoriteSerie.setNickname(favoriteDTO.getNickname());
+        favoriteSerie.setFavorite(favoriteDTO.isFavorite());
+        favoriteSerie.setName(favoriteDTO.getName());
+        favoriteSerieRepository.save(favoriteSerie);
 
     }
 
+    /**
+     * Verifica se uma série é favorita para um usuário.
+     * 
+     * @param serieId O ID da série
+     * @param nickname O nickname do usuário
+     * @return Verdadeiro se a série for favorita, falso caso contrário
+     */
     public boolean isFavorite(String serieId, String nickname) {
-        Optional<FavoriteSerieModel> optionalFavorite = favoriteSerieRepository.findBySerieIdAndNickname(serieId, nickname);
-        return optionalFavorite.map(FavoriteSerieModel::isFavorite).orElse(false);
+        return favoriteSerieRepository
+            .findBySerieIdAndNickname(serieId, nickname)
+            .map(FavoriteSerieModel::isFavorite)
+            .orElse(false);
     }
 
     private static class MovieSearchResponse {

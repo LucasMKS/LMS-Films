@@ -12,6 +12,9 @@ import com.lucasm.lmsfilmes.model.SerieModel;
 import com.lucasm.lmsfilmes.repository.MovieRepository;
 import com.lucasm.lmsfilmes.repository.SerieRepository;
 
+/**
+ * Serviço para gerenciar avaliações de filmes e séries.
+ */
 @Service
 public class RateService {
 
@@ -21,52 +24,54 @@ public class RateService {
     @Autowired
     private SerieRepository serieRepository;
     
+        /**
+     * Avalia um filme.
+     * 
+     * @param ratingDTO DTO com informações de avaliação do filme
+     * @return DTO atualizado com o status da operação
+     */
     public RateDTO ratingMovies(RateDTO ratingDTO) {
         try {
+            // Verificar se o filme já foi avaliado
             if (movieRepository.findByMovieIdAndNickname(ratingDTO.getMovieId(), ratingDTO.getNickname()).isPresent()) {
-                ratingDTO.setStatusCode(400);
-                ratingDTO.setError("Você já avaliou este filme.");
-                return ratingDTO;
+                return new RateDTO(400, "Você já avaliou este filme.");
             }
-
-            MovieModel movieModel = new MovieModel();
-            movieModel.setTitle(ratingDTO.getTitle());
-            movieModel.setMovieId(ratingDTO.getMovieId());
-            movieModel.setMyVote(ratingDTO.getRating());
-            movieModel.setNickname(ratingDTO.getNickname());
-            movieModel.setPoster_path(ratingDTO.getPoster_path());
-
-            // Salvar no banco de dados
+    
+            // Converter RateDTO em MovieModel e salvar no banco de dados
+            MovieModel movieModel = ratingDTO.toModel();
             movieRepository.save(movieModel);
-            ratingDTO.setStatusCode(200);
-            ratingDTO.setMensagem("Filme avaliado com sucesso. Nota: " + ratingDTO.getRating());
-
+    
+            return new RateDTO(200, "Filme avaliado com sucesso. Nota: " + ratingDTO.getRating());
         } catch (Exception e) {
-            ratingDTO.setStatusCode(500);
-            ratingDTO.setError(e.getMessage());
+            return new RateDTO(500, "Erro ao salvar avaliação: " + e.getMessage());
         }
-        return ratingDTO;
     }
 
+    /**
+     * Recupera filmes avaliados por um usuário.
+     * 
+     * @param nickname Nome do usuário
+     * @return DTO com a lista de filmes avaliados e o status da operação
+     */
     public RateDTO ratedContent(String nickname) {
-        RateDTO reqDTO = new RateDTO();
         try {
             List<MovieModel> result = movieRepository.findAllByNickname(nickname);
             if (!result.isEmpty()) {
-                reqDTO.setMovieList(result);
-                reqDTO.setStatusCode(200);
-                reqDTO.setMensagem("Filmes avaliados encontrados para o nickname: " + nickname);
+                return new RateDTO(result, 200, "Filmes avaliados encontrados para o nickname: " + nickname);
             } else {
-                reqDTO.setStatusCode(404);
-                reqDTO.setError("Nenhum filme avaliado encontrado para o nickname: " + nickname);
+                return new RateDTO(404, "Nenhum filme avaliado encontrado para o nickname: " + nickname);
             }
         } catch (Exception e) {
-            reqDTO.setStatusCode(500);
-            reqDTO.setError("Erro ao buscar filmes avaliados: " + e.getMessage());
+            return new RateDTO(500, "Erro ao buscar filmes avaliados: " + e.getMessage());
         }
-        return reqDTO;
     }
     
+    /**
+     * Atualiza a avaliação de um filme existente.
+     * 
+     * @param ratingDTO DTO com informações de avaliação atualizada do filme
+     * @return DTO atualizado com o status da operação
+     */
     public RateDTO updateRate(RateDTO ratingDTO) {
         try {
             Optional<MovieModel> movieOptional = movieRepository.findByMovieIdAndNickname(ratingDTO.getMovieId(), ratingDTO.getNickname());
@@ -74,25 +79,25 @@ public class RateService {
                 MovieModel movieModel = movieOptional.get();
                 movieModel.setMyVote(ratingDTO.getRating());
                 movieRepository.save(movieModel);
-                ratingDTO.setStatusCode(200);
-                ratingDTO.setMensagem("Filme atualizado com sucesso. Nova nota: " + ratingDTO.getRating());
+                return new RateDTO(200, "Filme atualizado com sucesso. Nova nota: " + ratingDTO.getRating());
             } else {
-                ratingDTO.setStatusCode(404);
-                ratingDTO.setError("Filme não encontrado para atualização.");
+                return new RateDTO(404, "Filme não encontrado para atualização.");
             }
         } catch (Exception e) {
-            ratingDTO.setStatusCode(500);
-            ratingDTO.setError(e.getMessage());
+            return new RateDTO(500, "Erro ao atualizar avaliação: " + e.getMessage());
         }
-        return ratingDTO;
     }
 
+    /**
+     * Avalia uma série e salva a avaliação no banco de dados.
+     * 
+     * @param ratingDTO DTO com informações de avaliação da série
+     * @return DTO atualizado com o status da operação
+     */
     public RateDTO ratingSeries(RateDTO ratingDTO) {
         try {
             if (serieRepository.findBySerieIdAndNickname(ratingDTO.getSerieId(), ratingDTO.getNickname()).isPresent()) {
-                ratingDTO.setStatusCode(400);
-                ratingDTO.setError("Você já avaliou esta serie.");
-                return ratingDTO;
+                return new RateDTO(400, "Você já avaliou esta série.");
             }
 
             SerieModel serieModel = new SerieModel();
@@ -104,35 +109,38 @@ public class RateService {
 
             // Salvar no banco de dados
             serieRepository.save(serieModel);
-            ratingDTO.setStatusCode(200);
-            ratingDTO.setMensagem("Serie avaliado com sucesso. Nota: " + ratingDTO.getRating());
+            return new RateDTO(200, "Série avaliada com sucesso. Nota: " + ratingDTO.getRating());
 
         } catch (Exception e) {
-            ratingDTO.setStatusCode(500);
-            ratingDTO.setError(e.getMessage());
+            return new RateDTO(500, "Erro ao salvar avaliação: " + e.getMessage());
         }
-        return ratingDTO;
     }
 
+    /**
+     * Recupera todas as séries avaliadas por um usuário.
+     * 
+     * @param nickname Nome do usuário
+     * @return DTO com a lista de séries avaliadas e o status da operação
+     */
     public RateDTO searchRatedSeries(String nickname) {
-        RateDTO reqDTO = new RateDTO();
         try {
             List<SerieModel> result = serieRepository.findAllByNickname(nickname);
             if (!result.isEmpty()) {
-                reqDTO.setSerieList(result);
-                reqDTO.setStatusCode(200);
-                reqDTO.setMensagem("Series avaliadas encontrados.");
+                return new RateDTO(200, "Séries avaliadas encontradas.", result);
             } else {
-                reqDTO.setStatusCode(404);
-                reqDTO.setError("Nenhuma serie avaliado encontrada." );
+                return new RateDTO(404, "Nenhuma série avaliada encontrada.");
             }
         } catch (Exception e) {
-            reqDTO.setStatusCode(500);
-            reqDTO.setError("Erro ao buscar filmes avaliados: " + e.getMessage());
+            return new RateDTO(500, "Erro ao buscar séries avaliadas: " + e.getMessage());
         }
-        return reqDTO;
     }
     
+    /**
+     * Atualiza a avaliação de uma série existente.
+     * 
+     * @param ratingDTO DTO com informações de avaliação atualizada da série
+     * @return DTO atualizado com o status da operação
+     */
     public RateDTO updateRatingSeries(RateDTO ratingDTO) {
         try {
             Optional<SerieModel> serieOptional = serieRepository.findBySerieIdAndNickname(ratingDTO.getSerieId(), ratingDTO.getNickname());
@@ -140,17 +148,12 @@ public class RateService {
                 SerieModel serieModel = serieOptional.get();
                 serieModel.setMyVote(ratingDTO.getRating());
                 serieRepository.save(serieModel);
-                ratingDTO.setStatusCode(200);
-                ratingDTO.setMensagem("Serie atualizado com sucesso. Nova nota: " + ratingDTO.getRating());
+                return new RateDTO(200, "Série atualizada com sucesso. Nova nota: " + ratingDTO.getRating());
             } else {
-                ratingDTO.setStatusCode(404);
-                ratingDTO.setError("Serie não encontrado para atualização.");
+                return new RateDTO(404, "Série não encontrada para atualização.");
             }
         } catch (Exception e) {
-            ratingDTO.setStatusCode(500);
-            ratingDTO.setError(e.getMessage());
+            return new RateDTO(500, "Erro ao atualizar avaliação: " + e.getMessage());
         }
-        return ratingDTO;
     }
-
 }

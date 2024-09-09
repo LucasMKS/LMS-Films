@@ -49,4 +49,11 @@ public class TmdbDTO {
         private String origin_country;
     }
 
+    public TmdbDTO() {}
+
+    public TmdbDTO(int statusCode, String mensagem) {
+        this.statusCode = statusCode;
+        this.mensagem = mensagem;
+    }
+
 }

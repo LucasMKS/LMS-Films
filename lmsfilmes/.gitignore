@@ -3,7 +3,6 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
-pom.xml
 
 # Pessoal
 *.sql
@@ -89,3 +88,5 @@ replay_pid*
 
 # Built Visual Studio Code Extensions
 *.vsix
+pom.xml
+src/main/resources/application.properties

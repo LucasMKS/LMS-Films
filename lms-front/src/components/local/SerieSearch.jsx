@@ -237,7 +237,7 @@ const SerieSearch = ({ onLogout }) => {
                 {favoritesList && favoritesList.length > 0 && (
                     favoritesList.map((item) => (
                         <>
-                            <Button label={item.name} severity="secondary" text className="w-full mt-2" onClick={() => handleFavoriteDetails(item)} />
+                            <Button label={item.name} severity="secondary" text className="w-full mt-2" onClick={() => handleClickOpen(item)} />
                             <Divider />
                         </>
                     ))

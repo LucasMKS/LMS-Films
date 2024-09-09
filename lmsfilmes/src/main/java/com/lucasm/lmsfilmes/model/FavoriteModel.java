@@ -8,6 +8,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
 
+/**
+ * Modelo de dados para filmes favoritos.
+ */
 @Entity
 @Table(name = "favorite_movies")
 @Data

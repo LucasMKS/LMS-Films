@@ -9,19 +9,24 @@ import org.springframework.web.bind.annotation.RequestBody;
 import com.lucasm.lmsfilmes.dto.ResponseDTO;
 import com.lucasm.lmsfilmes.service.AuthService;
 
+/**
+ * Controlador de autenticação.
+ */
 @Controller
 public class AuthController {
 
     @Autowired
-    private AuthService userService;
+    private AuthService authService;
 
-     @PostMapping("/auth/register")
-    public ResponseEntity<ResponseDTO> regeister(@RequestBody ResponseDTO reg){
-        return ResponseEntity.ok(userService.register(reg));
+    // Método para registrar um novo usuário.
+    @PostMapping("/auth/register")
+    public ResponseEntity<ResponseDTO> register(@RequestBody ResponseDTO reg) {
+        return ResponseEntity.ok(authService.register(reg));
     }
 
+    // Método para realizar login.
     @PostMapping("/auth/login")
-    public ResponseEntity<ResponseDTO> login(@RequestBody ResponseDTO req){
-        return ResponseEntity.ok(userService.login(req));
+    public ResponseEntity<ResponseDTO> login(@RequestBody ResponseDTO req) {
+        return ResponseEntity.ok(authService.login(req));
     }
 }

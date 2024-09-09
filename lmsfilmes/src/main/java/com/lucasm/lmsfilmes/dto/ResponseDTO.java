@@ -8,6 +8,9 @@ import lombok.Data;
 
 import java.util.List;
 
+/**
+ * DTO para transferir informações sobre respostas de requisições.
+ */
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)

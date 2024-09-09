@@ -1,7 +1,7 @@
 import axios from "axios";
 
 class AuthService {
-  static BASE_URL = "http://localhost:8080";
+  static BASE_URL = "https://lms-filmsbackend-production.up.railway.app";
 
   static async login(email, password) {
     try {
