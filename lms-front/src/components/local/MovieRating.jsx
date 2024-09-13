@@ -9,7 +9,6 @@ import { InputNumber } from 'primereact/inputnumber';
 import { Dialog } from 'primereact/dialog';
 import { Toast } from 'primereact/toast';
 import { BlockUI } from 'primereact/blockui';
-import { RadioButton } from 'primereact/radiobutton';
 import { Paginator } from 'primereact/paginator';
 import { ToggleButton } from 'primereact/togglebutton';
 import { Sidebar } from 'primereact/sidebar';
@@ -18,6 +17,10 @@ import { Dropdown } from 'primereact/dropdown';
 
 import { Heart } from 'lucide-react';
 import { HeartOff } from 'lucide-react';
+import { Check } from 'lucide-react';
+import { X } from 'lucide-react';
+import { BookOpenCheck } from 'lucide-react';
+
 import posterImagem from '../../assets/LMS_Poster.png';
 import bgImagem from '../../assets/LMS-BG.png';
 
@@ -377,9 +380,9 @@ const RatedPage = ({ onLogout }) => {
                                         </div>
                                     )}
                                     <div className='justify-center flex'>
-                                        <Button className='w-36 h-8 mr-1' type="button" label="HomePage" icon="pi pi-users" outlined badgeClassName="p-badge-danger" onClick={() => window.open(details.homepage)}
+                                        <Button className='w-36 h-8 mr-1' type="button" label={<p className='flex'><BookOpenCheck className='mr-2'/> HomePage</p>} outlined badgeClassName="p-badge-danger" onClick={() => window.open(details.homepage)}
                                             disabled={!details.homepage} />
-                                        <Button className='w-36 h-8 ml-1' type="button" label="Imdb" icon="pi pi-users" outlined badgeClassName="p-badge-danger" onClick={() => window.open('https://www.imdb.com/title/' + details.imdb_id)}
+                                        <Button className='w-36 h-8 ml-1' type="button" label={<p className='flex'><BookOpenCheck className='mr-2'/> IMDB</p>} outlined badgeClassName="p-badge-danger" onClick={() => window.open('https://www.imdb.com/title/' + details.imdb_id)}
                                             disabled={!details.imdb_id} />
                                     </div>
                                 </div>
@@ -392,8 +395,8 @@ const RatedPage = ({ onLogout }) => {
                                 <InputNumber placeholder="Nota de 0-10 " minFractionDigits={1} inputId="minmax-buttons" value={valueRate} onValueChange={(e) => setValueRate(e.value)} mode="decimal" step={0.1} min={1} max={10} />
                             </div>
                             <div className='mt-2'>
-                                <Button label="Avaliar" icon="pi pi-check" onClick={updateRate} severity="info" raised className='mr-2' />
-                                <Button label="Fechar" icon="pi pi-times" onClick={() => setOpen(false)} severity="secondary" raised />
+                                <Button label="Avaliar" icon={<Check />} onClick={updateRate} severity="info" raised className='mr-2' />
+                                <Button label="Fechar" icon={<X />} onClick={() => setOpen(false)} severity="secondary" raised />
                             </div>
                         </div>
                     </Dialog>
