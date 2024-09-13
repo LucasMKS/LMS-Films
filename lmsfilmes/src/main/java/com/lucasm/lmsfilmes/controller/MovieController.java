@@ -26,8 +26,9 @@ public class MovieController {
 
     // Método para buscar filmes por query.
     @GetMapping("/movies/search")
-    public ResponseEntity<List<TmdbDTO>> searchMovies(@RequestParam String query) {
-        List<TmdbDTO> movies = movieService.searchMovies(query);
+    public ResponseEntity<List<TmdbDTO>> searchMovies(@RequestParam String query,
+            @RequestParam(defaultValue = "1") int page) {
+        List<TmdbDTO> movies = movieService.searchMovies(query, page);
         return ResponseEntity.ok(movies);
     }
 

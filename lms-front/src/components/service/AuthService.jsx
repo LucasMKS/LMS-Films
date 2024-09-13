@@ -21,15 +21,16 @@ class AuthService {
     }
   }
 
-  static async search(searchTerm) {
+  static async search(searchTerm, page = 1) {
     try {
       const encodedSearchTerm = encodeURIComponent(searchTerm);
-      const response = await axios.get(`${AuthService.BASE_URL}/movies/search?query=${encodedSearchTerm}`)
+      const response = await axios.get(`${AuthService.BASE_URL}/movies/search?query=${encodedSearchTerm}&page=${page}`);
       return response.data;
     } catch (err) {
       throw err;
     }
   }
+  
 
   static async details(movieId) {
     try {

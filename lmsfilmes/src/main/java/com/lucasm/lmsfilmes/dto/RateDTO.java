@@ -36,26 +36,6 @@ public class RateDTO {
     private SerieModel seriemodel;   // Modelo de série
     private List<SerieModel> serieList; // Lista de séries
 
-    // Construtor com parâmetros para status e mensagem
-    public RateDTO(int statusCode, String mensagem) {
-        this.statusCode = statusCode;
-        this.mensagem = mensagem;
-    }
-
-    // Construtor com lista de filmes e status
-    public RateDTO(List<MovieModel> movieList, int statusCode, String mensagem) {
-        this.movieList = movieList;
-        this.statusCode = statusCode;
-        this.mensagem = mensagem;
-    }
-
-    // Construtor com lista de séries e status
-    public RateDTO(int statusCode, String mensagem, List<SerieModel> serieList) {
-        this.serieList = serieList;
-        this.statusCode = statusCode;
-        this.mensagem = mensagem;
-    }
-
     // Método para converter RateDTO em MovieModel
     public MovieModel toModel() {
         MovieModel movieModel = new MovieModel();

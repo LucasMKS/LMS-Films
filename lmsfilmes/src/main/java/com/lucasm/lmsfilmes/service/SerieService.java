@@ -111,7 +111,7 @@ public class SerieService {
     public List<SeriesDTO> seriePopular(int page) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(new URI(tmdbApiUrl + "/tv/popular?language=pt-BR&page=" + page))
+                    .uri(new URI(tmdbApiUrl + "/trending/tv/week?language=pt-BR&page=" + page))
                     .header("Authorization", "Bearer " + apiKey)
                     .header("Accept", "application/json")
                     .GET()

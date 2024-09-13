@@ -6,7 +6,6 @@ import com.lucasm.lmsfilmes.dto.FavoriteDTO;
 import com.lucasm.lmsfilmes.model.FavoriteModel;
 import com.lucasm.lmsfilmes.repository.FavoriteRepository;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -48,11 +47,11 @@ public class MovieService {
      * @param query Termo de busca
      * @return Lista de filmes encontrados
      */
-    public List<TmdbDTO> searchMovies(String query) {
+    public List<TmdbDTO> searchMovies(String query, int page) {
         try {
             String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8.toString());
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(new URI(tmdbApiUrl + "/search/movie?query=" + encodedQuery + "&include_adult=true&language=pt-BR"))
+                    .uri(new URI(tmdbApiUrl + "/search/movie?query=" + encodedQuery + "&include_adult=false&language=pt-BR&page=" + page))
                     .header("Authorization", "Bearer " + apiKey)
                     .header("Accept", "application/json")
                     .GET()

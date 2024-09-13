@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import AuthService from '../service/AuthService';
+import MenuBar from "../items/MenuBarRating";
+
 import { Button } from 'primereact/button';
-import { AutoComplete } from "primereact/autocomplete";
 import { Card } from 'primereact/card';
 import { Image } from 'primereact/image';
-import { Menubar } from 'primereact/menubar';
 import { InputNumber } from 'primereact/inputnumber';
 import { Dialog } from 'primereact/dialog';
 import { Toast } from 'primereact/toast';
@@ -14,12 +14,12 @@ import { Paginator } from 'primereact/paginator';
 import { ToggleButton } from 'primereact/togglebutton';
 import { Sidebar } from 'primereact/sidebar';
 import { Divider } from 'primereact/divider';
+import { Dropdown } from 'primereact/dropdown';
 
 import { Heart } from 'lucide-react';
 import { HeartOff } from 'lucide-react';
 import posterImagem from '../../assets/LMS_Poster.png';
 import bgImagem from '../../assets/LMS-BG.png';
-import logo from '../../assets/logo.png';
 
 const RatedPage = ({ onLogout }) => {
     const [content, setContent] = useState([]);
@@ -37,23 +37,39 @@ const RatedPage = ({ onLogout }) => {
     const [favorites, setFavorites] = useState({});
     const [favoritesList, setFavoritesList] = useState({})
     const [visibleLeft, setVisibleLeft] = useState(false);
-
+    const [template, setTemplate] = useState('FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink');
+    const [isMobile, setIsMobile] = useState(false);
 
     const toast = useRef(null);
     const itemsPerPage = 18;
 
     useEffect(() => {
-        const loadContent = async () => {
+        if (initialLoad) {
             setBlocked(true);
-            await ratedContent();
-            setInitialLoad(false);
-            setTimeout(() => setBlocked(false), 1000);
-        };
-
-        if (initialLoad) loadContent();
-        else ratedContent();
+            ratedContent().finally(() => {
+                setInitialLoad(false);
+            });
+        } else {
+            ratedContent();
+        }
+        setTimeout(() => setBlocked(false), 1000);
     }, [currentPage, groupBy]);
 
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 768);
+            if (window.innerWidth < 768) {
+                setTemplate({ layout: 'PrevPageLink CurrentPageReport NextPageLink' });
+            } else {
+                setTemplate('FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink');
+            }
+        };
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
 
     const ratedContent = async () => {
         try {
@@ -102,7 +118,9 @@ const RatedPage = ({ onLogout }) => {
 
     const search = (event) => {
         const query = event.query.trim().toLowerCase();
+        console.log(query);
         setFilteredContent(query ? content.filter(cont => cont.title && cont.title.toLowerCase().startsWith(query)) : [...content]);
+        console.log(filteredContent);
     };
 
     const autocomplete = (e) => {
@@ -111,7 +129,9 @@ const RatedPage = ({ onLogout }) => {
         if (selected && typeof selected === 'object' && selected.title) {
             setContent([selected]);
         } else {
-            if (!selected) ratedContent();
+            if (!selected) {
+                ratedContent();
+            }
         }
     };
 
@@ -158,64 +178,53 @@ const RatedPage = ({ onLogout }) => {
     };
 
     const getGroupedContent = () => {
-        const sortedContent = [...content].sort((a, b) => {
-            switch (groupBy) {
-                case 'name':
-                    return a.title.localeCompare(b.title);
-                case 'rating':
-                    return b.myVote - a.myVote;
-                case 'date':
-                    return new Date(b.created_at) - new Date(a.created_at);
-                default:
-                    return 0;
+        const groupedContent = content.reduce((groups, item) => {
+            const groupKey = (() => {
+                switch (groupBy) {
+                    case 'name':
+                        return item.title.charAt(0).toUpperCase();
+                    case 'rating':
+                        return parseFloat(item.myVote).toFixed(1);
+                    case 'date':
+                        return new Date(item.created_at).toISOString();
+                    default:
+                        return 0;
+                }
+            })();
+
+            if (!groups[groupKey]) {
+                groups[groupKey] = [];
             }
+            groups[groupKey].push(item);
+            return groups;
+        }, {});
+
+        const sortedGroupKeys = Object.keys(groupedContent).sort((a, b) => {
+            if (groupBy === 'rating') {
+                const ratingA = parseFloat(a.replace('Nota: ', ''), 10);
+                const ratingB = parseFloat(b.replace('Nota: ', ''), 10);
+                return ratingB - ratingA;
+            } else if (groupBy === 'date') {
+                return new Date(b) - new Date(a); 
+            }
+            return a.localeCompare(b);
+        });
+
+        let result = [];
+        sortedGroupKeys.forEach((key) => {
+            result = result.concat(groupedContent[key]);
         });
 
         const start = currentPage * itemsPerPage;
-        return sortedContent.slice(start, start + itemsPerPage);
+        const end = start + itemsPerPage;
+        return result.slice(start, end);
     };
 
-    const menuItems = [
-        {
-            label: 'Filmes',
-            icon: 'pi pi-video',
-            items: [
-                { label: 'Pesquisar', url: '/filmes', icon: 'pi pi-search' },
-                { label: 'Avaliados', url: '/filmes/avaliados', icon: 'pi pi-star-fill' }
-            ]
-        },
-        {
-            label: 'Series',
-            icon: 'pi pi-play-circle',
-            items: [
-                { label: 'Pesquisar', url: '/series', icon: 'pi pi-search' },
-                { label: 'Avaliados', url: '/series/avaliados', icon: 'pi pi-star-fill' }
-            ]
-        },
+    const groupNames = [
+        { name: 'Nome', code: 'name', groupBy: 'name' },
+        { name: 'Nota', code: 'rating' },
+        { name: 'Data', code: 'date' }
     ];
-
-    const menuStart = <img alt="logo" src={logo} className="mr-4 h-14" />;
-    const menuEnd = (
-        <div className="flex align-items-center gap-2 items-center">
-            <AutoComplete
-                placeholder='Buscar'
-                field="title"
-                value={searchValue}
-                suggestions={filteredContent}
-                completeMethod={search}
-                onChange={autocomplete}
-            />
-            <Button icon={<Heart className='mr-2' />} label="Favoritos" onClick={() => handleOpenSidebar()} />
-            <Button label="Sair" icon="pi pi-arrow-right" iconPos="right" onClick={onLogout} />
-        </div>
-    );
-
-    const customHeader = (
-        <div className="flex align-items-center gap-2">
-            <Heart className='text-red-500' />
-            <span className="font-bold">Favoritos</span>
-        </div>
-    );
 
     const formatDate = (dateString) => {
         const date = new Date(dateString);
@@ -233,11 +242,19 @@ const RatedPage = ({ onLogout }) => {
             overflowY: "auto",
         }}>
             <div className="fixed top-0 left-0 w-full z-50">
-                <Menubar model={menuItems} start={menuStart} end={menuEnd} className='h-16' />
+                <MenuBar
+                    field="title"
+                    searchValue={searchValue}
+                    filteredContent={filteredContent}
+                    search={search}
+                    autocomplete={autocomplete}
+                    handleOpenSidebar={handleOpenSidebar}
+                    onLogout={onLogout}
+                />
             </div>
             <BlockUI blocked={blocked} fullScreen />
             <Toast ref={toast} className='mt-12' />
-            <Sidebar header={customHeader} visible={visibleLeft} position="right" onHide={() => setVisibleLeft(false)}>
+            <Sidebar header={<div className="flex align-items-center gap-2"><Heart className='text-red-500' /><span className="font-bold">Favoritos</span></div>} visible={visibleLeft} position="right" onHide={() => setVisibleLeft(false)}>
                 {favoritesList && favoritesList.length > 0 && (
                     favoritesList.map((item) => (
                         <React.Fragment key={item.movieId}>
@@ -250,45 +267,42 @@ const RatedPage = ({ onLogout }) => {
 
             <div className="flex flex-col items-center text-center py-24">
                 <div className="mb-4">
-                    <p className='text-white font-bold text-5xl mb-4'>Avaliados</p>
-                    <p className='text-white  mb-2'>Agrupar por</p>
-                    <div className="flex flex-wrap gap-3 text-white">
-                        {['name', 'rating', 'date'].map((group) => (
-                            <div key={group} className="flex align-items-center">
-                                <RadioButton
-                                    inputId={`groupBy${group}`}
-                                    name="groupBy"
-                                    value={group}
-                                    onChange={(e) => setGroupBy(e.value)}
-                                    checked={groupBy === group}
-                                />
-                                <label htmlFor={`groupBy${group}`} className="ml-2">{group.charAt(0).toUpperCase() + group.slice(1)}</label>
-                            </div>
-                        ))}
+                    <p className="text-white font-bold text-5xl text-center mb-4">Avaliados</p>
+                    <p className="text-white text-center mb-2">Agrupar por</p>
+                    <div className="flex justify-center">
+                        <Dropdown
+                            value={groupBy}
+                            onChange={(e) => setGroupBy(e.value)}
+                            options={groupNames}
+                            optionLabel="name"
+                            optionValue="code"
+                        />
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 w-5/6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mx-2">
                     {getGroupedContent().map((item) => (
                         <Card
                             key={item.id}
                             onClick={() => handleClickOpen(item)}
-                            title={item.title}
                             header={() => (
-                                <Image
-                                    src={item.poster_path ? `https://image.tmdb.org/t/p/w200/${item.poster_path}` : posterImagem}
-                                    alt="Image"
-                                />
+                                <div >
+                                    <Image
+                                        src={item.poster_path ? `https://image.tmdb.org/t/p/w200/${item.poster_path}` : posterImagem}
+                                        alt="Image"
+                                    />
+                                    <p className="font-bold mt-2 text-lg">{item.title}</p>
+                                </div>
                             )}
                             subTitle={(
-                                <>
+                                <div>
                                     <div className='font-bold'>{`Nota: ${item.myVote}`}</div>
                                     {item.created_at && (
                                         <div>Adição: {formatDate(item.created_at)}</div>
                                     )}
-                                </>
+                                </div>
                             )}
-                            className="h-full flex flex-col justify-between transform transition-transform duration-300 hover:scale-105"
+                            className="flex flex-col justify-between transform transition-transform duration-300 hover:scale-105"
                         />
                     ))}
                 </div>
@@ -299,16 +313,16 @@ const RatedPage = ({ onLogout }) => {
                     rows={itemsPerPage}
                     totalRecords={totalRecords}
                     onPageChange={(e) => setCurrentPage(e.page)}
-                    template="FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
-                    className="fixed bottom-0 left-1/2 transform -translate-x-1/2 bg-slate-800 shadow-lg p-2 rounded-lg z-50 mb-4"
+                    template={template}
+                    className={`bottom-0 left-1/2 transform -translate-x-1/2 shadow-lg p-2 rounded-lg z-50 mb-4 bg-slate-800 w-52 md:w-80 fixed`}
                 />
 
                 {selectedContent && (
-                    <Dialog header={selectedContent.title} visible={open} style={{ width: '40vw' }} onHide={() => setOpen(false)}>
+                    <Dialog header={selectedContent.title} visible={open} style={{ width: isMobile ? '90vw' : '38vw' }} breakpoints={{ '960px': '90vw', '641px': '90vw' }} onHide={() => setOpen(false)}>
                         <div>
                             <p className="italic">{details.tagline}</p>
                             {details.production_companies && details.production_companies.length > 0 && (
-                                <div className="mt-2">
+                                <div className={`mt-2 ${isMobile ? 'text-center' : ''}`}>
                                     <p className="font-bold">
                                         {details.production_companies[0].name}
                                         {details.production_companies[0].origin_country && (
@@ -322,16 +336,16 @@ const RatedPage = ({ onLogout }) => {
                                     checked={favorites[selectedContent.movieId] || false}
                                     onChange={() => handleFavoriteToggle(selectedContent.movieId, selectedContent.title)}
                                     className="w-4rem"
-                                    onLabel="Desfavoritar"
-                                    offLabel="Favoritar"
-                                    onIcon={<HeartOff className='mr-2' />}
-                                    offIcon={<Heart className='mr-2' />}
+                                    onLabel=" "
+                                    offLabel=" "
+                                    onIcon={<HeartOff />}
+                                    offIcon={<Heart className='text-red-500' />}
                                 />
                             </div>
-                            <div className="flex items-end space-x-4">
+                            <div className={` ${isMobile ? 'items-end space-x-4' : 'items-start space-x-4 flex'}`}>
                                 <Image imageClassName="rounded-xl border"
                                     src={details.backdrop_path
-                                        ? `https://image.tmdb.org/t/p/w200/${details.backdrop_path}`
+                                        ? `https://image.tmdb.org/t/p/${isMobile ? 'original' : 'w200'}/${details.backdrop_path}`
                                         : posterImagem}
                                     alt="Image"
                                 />
@@ -372,13 +386,14 @@ const RatedPage = ({ onLogout }) => {
                             </div>
                         </div>
                         <p className="mt-5">{details.overview}</p>
-                        <div className="flex mt-4">
-                            <div className="mr-12">
-                                <InputNumber placeholder="Nota de 0-10 " minFractionDigits={1} inputId="minmax-buttons" value={valueRate} onValueChange={(e) => setValueRate(e.value)} mode="decimal" step={0.1} showButtons min={1} max={10} />
-                            </div>
+
+                        <div className="mt-4 justify-center text-center">
                             <div>
-                                <Button label="Fechar" icon="pi pi-times" onClick={() => setOpen(false)} severity="secondary" raised className='mr-2' />
-                                <Button label="Avaliar" icon="pi pi-check" onClick={updateRate} severity="info" raised />
+                                <InputNumber placeholder="Nota de 0-10 " minFractionDigits={1} inputId="minmax-buttons" value={valueRate} onValueChange={(e) => setValueRate(e.value)} mode="decimal" step={0.1} min={1} max={10} />
+                            </div>
+                            <div className='mt-2'>
+                                <Button label="Avaliar" icon="pi pi-check" onClick={updateRate} severity="info" raised className='mr-2' />
+                                <Button label="Fechar" icon="pi pi-times" onClick={() => setOpen(false)} severity="secondary" raised />
                             </div>
                         </div>
                     </Dialog>
